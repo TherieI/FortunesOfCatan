@@ -9,6 +9,10 @@ struct Vertex {
 }
 implement_vertex!(Vertex, pos, tex_coords);
 
-struct Hex {
+pub struct Hex {
     
+}
+
+pub struct Board {
+
 }

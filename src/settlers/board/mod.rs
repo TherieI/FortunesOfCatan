@@ -1,2 +1,2 @@
-mod hex;
-mod card;
+pub mod card;
+pub mod hex;

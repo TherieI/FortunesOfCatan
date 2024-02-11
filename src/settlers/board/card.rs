@@ -4,7 +4,7 @@ pub enum Resource {
     Brick(u8),
     Ore(u8),
     Wheat(u8),
-    Sheep(u8)
+    Sheep(u8),
 }
 
 // Development cards (gambling cards)
