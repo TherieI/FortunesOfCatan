@@ -9,6 +9,19 @@ pub enum Resource {
     Desert,
 }
 
+impl Resource {
+    pub fn clone_with_value(&self, val: u8) -> Self {
+        match self {
+            Resource::Desert => Resource::Desert,
+            Resource::Wood(n) => Resource::Wood(*n),
+            Resource::Brick(n) => Resource::Brick(*n),
+            Resource::Ore(n) => Resource::Ore(*n),
+            Resource::Wheat(n) => Resource::Wheat(*n),
+            Resource::Sheep(n) => Resource::Sheep(*n)
+        }
+    }
+}
+
 // Development cards (gambling cards)
 pub enum Gamble {
     Knight(u8),
@@ -24,3 +37,39 @@ pub enum Occupant {
     Robber,
     Merchant,
 }
+
+#[cfg(test)]
+mod tests {
+
+    pub enum Res {
+        Wood { n: u8 },
+        Brick(u8),
+    }
+
+    fn match_test(re: &mut Res) {
+        match re {
+            Res::Wood { n } => {
+                *n -= 1;
+            },
+            Res::Brick(val) => {
+                *val -= 1;
+            }
+            _ => ()
+        }
+    }
+
+    #[test]
+    fn edit_enums() {
+        let mut wood = Res::Wood { n: 10 };
+        let mut brick = Res::Brick(10);
+        match_test(&mut wood);
+        match_test(&mut brick);
+        if let Res::Wood { n } = wood {
+            assert_eq!(n, 9);
+        }
+        if let Res::Brick(n) = brick {
+            assert_eq!(n, 9)
+        }
+    }
+}
+
