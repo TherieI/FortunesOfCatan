@@ -1,7 +1,7 @@
 use crate::settlers::game::Scene;
 use crate::settlers::Board;
 use glium::backend::Facade;
-use glium::Frame;
+use glium::{Frame, VertexBuffer};
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyEvent, MouseButton};
 
@@ -33,6 +33,8 @@ impl Scene for BaseGame {
     where
         F: ?Sized + Facade,
     {
+        let (vertices, indices) = self.board.buffers();
+        let vertex_buffer = VertexBuffer::new(facade, &vertices);
         frame
     }
 }

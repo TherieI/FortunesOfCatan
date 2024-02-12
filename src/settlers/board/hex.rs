@@ -4,11 +4,20 @@ use glium::Surface;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
 #[derive(Clone, Copy)]
-struct Vertex {
+pub struct Vertex {
     pos: [f32; 2],
     tex_coords: [f32; 2],
 }
 implement_vertex!(Vertex, pos, tex_coords);
+
+impl Vertex {
+    fn new(x: f32, y: f32, s: f32, t: f32) -> Vertex {
+        Vertex {
+            pos: [x, y],
+            tex_coords: [s, t],
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Hex {
@@ -25,8 +34,9 @@ impl Hex {
         }
     }
 
-    pub fn with_resource(resource: Resource) -> Self {
-        Hex { resource: Some(resource), occupants: None}
+    pub fn set_resource(&mut self, resource: Resource) -> &mut Self {
+        self.resource = Some(resource);
+        self
     }
 
     pub fn rob(&mut self) -> &mut Self {
@@ -88,10 +98,10 @@ impl Hex {
     }
 }
 
+#[derive(Debug)]
 pub struct Board<const I: usize, const J: usize> {
     tiles: [[Hex; I]; J],
 }
-
 
 impl<const I: usize, const J: usize> Board<I, J> {
     pub fn new() -> Self {
@@ -104,8 +114,26 @@ impl<const I: usize, const J: usize> Board<I, J> {
         if I != 5 || I != J {
             panic!("Board must be 5x5");
         }
-        let tiles = [[Hex::new(); I]; J];
+        let mut tiles = [[Hex::new(); I]; J];
+        let mut chances = Hex::random_set();
+        for j in 0..J {
+            for i in 1..I-1 {
+                tiles[j][i].set_resource(chances.pop().unwrap());
+            }
+        }
+        tiles[1][0].set_resource(chances.pop().unwrap());
+        tiles[2][0].set_resource(chances.pop().unwrap());
+        tiles[3][0].set_resource(chances.pop().unwrap());
+        tiles[2][4].set_resource(chances.pop().unwrap());
+
         Board { tiles, }
+    }
+
+    pub fn buffers(&self) -> (Vec<Vertex>, Vec<u32>) {
+        let vertices = Vec::new();
+        let indices = Vec::new();
+
+        (vertices, indices)
     }
 }
 
@@ -120,5 +148,11 @@ mod tests {
         for res in tiles.iter() {
             println!("{:?}", res);
         }
+    }
+
+    #[test]
+    fn board5x5() {
+        let board: Board<5, 5> = Board::random_default();
+        println!("{:?}", board);
     }
 }
