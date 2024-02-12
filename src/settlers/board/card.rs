@@ -13,11 +13,11 @@ impl Resource {
     pub fn clone_with_value(&self, val: u8) -> Self {
         match self {
             Resource::Desert => Resource::Desert,
-            Resource::Wood(n) => Resource::Wood(*n),
-            Resource::Brick(n) => Resource::Brick(*n),
-            Resource::Ore(n) => Resource::Ore(*n),
-            Resource::Wheat(n) => Resource::Wheat(*n),
-            Resource::Sheep(n) => Resource::Sheep(*n)
+            Resource::Wood(n) => Resource::Wood(val),
+            Resource::Brick(n) => Resource::Brick(val),
+            Resource::Ore(n) => Resource::Ore(val),
+            Resource::Wheat(n) => Resource::Wheat(val),
+            Resource::Sheep(n) => Resource::Sheep(val)
         }
     }
 }

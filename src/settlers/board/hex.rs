@@ -46,27 +46,13 @@ impl Hex {
         tiles.push(Resource::Desert);
 
         let mut rng = rand::thread_rng();
-        let mut tile_value = 1;
+        let mut tile_value = 2;
         let mut inc = 1;
 
-        let calulate_tile = |i: usize, remaining_resource: &mut u8| {
-            // Add Tile and random number to output
-            inc += 1;
-            if inc > 1 {
-                tile_value += 1;
-                inc = 0;
-            }
-            // Deplete tiles
-            *remaining_resource -= 1;
-            println!("{}", *remaining_resource);
-            if *remaining_resource == 0 {
-                tiles.remove(i);
-            }
-        };
         while tiles.len() > 0 {
             // Get random tile
             let resource_index: usize = rng.gen_range(0..tiles.len());
-            let resource: Resource;
+            let resource = tiles[resource_index].clone();
             match &mut tiles[resource_index] {
                 Resource::Desert => {
                     // Do something specific for Desert
@@ -79,6 +65,11 @@ impl Hex {
                 | Resource::Wheat(amount_left)
                 | Resource::Sheep(amount_left) => {
                     // Add Tile and random number to output
+                    if tile_value == 7 {
+                        // Skip 7's
+                        tile_value += 1;
+                    }
+                    out.push(resource.clone_with_value(tile_value));
                     inc += 1;
                     if inc > 1 {
                         tile_value += 1;
@@ -86,7 +77,6 @@ impl Hex {
                     }
                     // Deplete tiles
                     *amount_left -= 1;
-                    println!("{}", *amount_left);
                     if *amount_left == 0 {
                         tiles.remove(resource_index);
                     }
@@ -126,6 +116,7 @@ mod tests {
     #[test]
     fn default_random_generation() {
         let tiles = Hex::random_set();
+        assert_eq!(tiles.len(), 19);
         for res in tiles.iter() {
             println!("{:?}", res);
         }
