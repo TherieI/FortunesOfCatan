@@ -6,13 +6,13 @@ use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyEvent, MouseButton};
 
 pub struct BaseGame {
-    board: Board,
+    board: Board<5, 5>,
 }
 
 impl BaseGame {
     pub fn new() -> Self {
-        let board = Board::new().randomize();
-        Self {}
+        let board: Board<5, 5> = Board::random_default();
+        Self { board }
     }
 }
 
