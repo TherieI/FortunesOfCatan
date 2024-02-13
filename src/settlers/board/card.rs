@@ -17,7 +17,7 @@ impl Resource {
             Resource::Brick(_) => Resource::Brick(val),
             Resource::Ore(_) => Resource::Ore(val),
             Resource::Wheat(_) => Resource::Wheat(val),
-            Resource::Sheep(_) => Resource::Sheep(val)
+            Resource::Sheep(_) => Resource::Sheep(val),
         }
     }
 }
@@ -50,11 +50,11 @@ mod tests {
         match re {
             Res::Wood { n } => {
                 *n -= 1;
-            },
+            }
             Res::Brick(val) => {
                 *val -= 1;
             }
-            _ => ()
+            _ => (),
         }
     }
 
@@ -72,4 +72,3 @@ mod tests {
         }
     }
 }
-

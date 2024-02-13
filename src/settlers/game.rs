@@ -18,7 +18,7 @@ pub trait Scene {
 
     // Called every time before draw
     fn update(&mut self) -> Result<(), Box<dyn std::error::Error>>;
-    // Return a drawn frame to be flushed to the screen
+    // Draw to the screen with frame
     fn draw<F>(&self, facade: &F, frame: Frame) -> Frame
     where
         F: ?Sized + Facade;
@@ -42,15 +42,15 @@ impl Settlers {
     }
 
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut base_game = BaseGame::new();
-
         // =======================================
         let event_loop = winit::event_loop::EventLoopBuilder::new()
             .build()
             .expect("event loop building");
-        let (window, display) =
-            glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
+        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
+            .with_title("Gamblers of Catan")
+            .build(&event_loop);
 
+        let mut base_game = BaseGame::new(&display);
         // Game loop
         let _ = event_loop.run(move |event, window_target| {
             match event {
@@ -72,7 +72,8 @@ impl Settlers {
 
                     winit::event::WindowEvent::RedrawRequested => {
                         base_game.update().unwrap();
-                        let target = display.draw();
+                        let mut target = display.draw();
+                        target.clear_color(0.0, 0.5, 0.6, 1.0);
                         base_game.draw(&display, target).finish().unwrap();
                     }
                     _ => (),
