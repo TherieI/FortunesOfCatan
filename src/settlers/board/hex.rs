@@ -7,7 +7,7 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
     
 use std::fmt::{Display, Formatter};
 
-const BOARD_OFFSET: (f32, f32) = (5., 5.);
+const BOARD_OFFSET: (f32, f32) = (5., 4.2);
 
 #[derive(Clone, Copy)]
 pub struct Vertex {
@@ -143,8 +143,9 @@ impl<const I: usize, const J: usize> Board<I, J> {
     }
 
     fn verts_of_pos(&self, hex_pos: (f32, f32)) -> Vec<Vertex> {
-        let hex_radius = 1f32;
+        let hex_radius = 2.7f32;
         let mut vertices = Vec::new();
+        vertices.push(Vertex::new(hex_pos.0, hex_pos.1, 0., 0.));
         for i in 0..6 {
             vertices.push(Vertex::new(
                 hex_pos.0 + hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.),
@@ -161,22 +162,25 @@ impl<const I: usize, const J: usize> Board<I, J> {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         for j in 0..J {
-            for i in 0..I {
+            for mut i in 0..I {
                 let resource = self.tiles[j][i].resource;
                 if let Some(res) = resource {
                     // Land
+                    let mut offset: f32 = 0.;
+                    if j % 2 == 1 {
+                        offset += BOARD_OFFSET.0 / 2.;
+                    }
                     let mut hex_verts =
-                        self.verts_of_pos((BOARD_OFFSET.0 * i as f32, BOARD_OFFSET.1 * j as f32));
-                    let mut out = String::new();
-                    hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
-                    println!("{}", &out[0..out.len()-2]);
+                        self.verts_of_pos((BOARD_OFFSET.0 * i as f32 + offset, BOARD_OFFSET.1 * j as f32));
+                    // let mut out = String::new();
+                    // hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
+                    // println!("{}", &out[0..out.len()-2]);
                     vertices.append(&mut hex_verts);
-                    let mut hex_inds: Vec<u32> = vec![0u32, 1, 2, 3, 4, 5, 0]
+                    let mut hex_inds: Vec<u32> = vec![0u32, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1]
                         .iter()
-                        .map(|x| x + 6 * total_verts)
+                        .map(|x| x + 7 * total_verts)
                         .collect();
-                    hex_inds.iter().for_each(|v| print!("{}, ", v));
-                    println!();
+                    // s
                     indices.append(&mut hex_inds);
 
                     total_verts += 1;

@@ -45,10 +45,10 @@ impl Scene for BaseGame {
         let (vertices, indices) = self.board.buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer =
-            IndexBuffer::new(facade, glium::index::PrimitiveType::TriangleStrip, &indices).unwrap();
+            IndexBuffer::new(facade, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
 
         let size = (0.03, 0.03);
-        let aspect = 16. / 9.;
+        let aspect = 16. / 8.;
         let fov = 90.;
         let distance = 1.0;
         let perspective_matrix: [[f32; 4]; 4] = [

@@ -2,6 +2,7 @@
 
 in vec2 pos;
 in vec2 tex_coords;
+in int tile_type;
 
 uniform mat4 perspective;
 
