@@ -4,6 +4,8 @@ extern crate rand;
 
 mod settlers;
 
+const DEBUG: bool = true;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    settlers::game::main()
+    settlers::game::main(DEBUG)
 }

@@ -1,10 +1,13 @@
 use std::f32::consts::PI;
 
-use crate::settlers::board::{card::{Gamble, Occupant, Resource}, hex};
+use crate::settlers::board::{
+    card::{Gamble, Occupant, Resource},
+    hex,
+};
 use glium::texture::texture2d::Texture2d;
 use glium::Surface;
 use rand::{seq::SliceRandom, thread_rng, Rng};
-    
+
 use std::fmt::{Display, Formatter};
 
 const BOARD_OFFSET: (f32, f32) = (5., 4.2);
@@ -26,7 +29,7 @@ impl Vertex {
 }
 
 impl Display for Vertex {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> { 
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "({}, {})", self.pos[0], self.pos[1])
     }
 }
@@ -162,7 +165,7 @@ impl<const I: usize, const J: usize> Board<I, J> {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         for j in 0..J {
-            for mut i in 0..I {
+            for i in 0..I {
                 let resource = self.tiles[j][i].resource;
                 if let Some(res) = resource {
                     // Land
@@ -170,16 +173,19 @@ impl<const I: usize, const J: usize> Board<I, J> {
                     if j % 2 == 1 {
                         offset += BOARD_OFFSET.0 / 2.;
                     }
-                    let mut hex_verts =
-                        self.verts_of_pos((BOARD_OFFSET.0 * i as f32 + offset, BOARD_OFFSET.1 * j as f32));
+                    let mut hex_verts = self.verts_of_pos((
+                        BOARD_OFFSET.0 * i as f32 + offset,
+                        BOARD_OFFSET.1 * j as f32,
+                    ));
                     // let mut out = String::new();
                     // hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
                     // println!("{}", &out[0..out.len()-2]);
                     vertices.append(&mut hex_verts);
-                    let mut hex_inds: Vec<u32> = vec![0u32, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1]
-                        .iter()
-                        .map(|x| x + 7 * total_verts)
-                        .collect();
+                    let mut hex_inds: Vec<u32> =
+                        vec![0u32, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1]
+                            .iter()
+                            .map(|x| x + 7 * total_verts)
+                            .collect();
                     // s
                     indices.append(&mut hex_inds);
 

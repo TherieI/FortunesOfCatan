@@ -1,0 +1,172 @@
+// use std::ops::Mul;
+use std::fmt::{Display, Formatter, Result};
+use std::ops::{Index, IndexMut};
+
+#[derive(PartialEq, Debug)]
+pub struct Mat4 {
+    inner: [[f32; 4]; 4],
+}
+
+impl Display for Mat4 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        for row in &self.inner {
+            for &value in row {
+                write!(f, "{:>10.2} ", value)?; // Adjust the formatting as needed
+            }
+            writeln!(f)?; // Move to the next line after each row
+        }
+        Ok(())
+    }
+}
+
+impl From<[[f32; 4]; 4]> for Mat4 {
+    fn from(matrix: [[f32; 4]; 4]) -> Self {
+        Self { inner: matrix }
+    }
+}
+
+impl Index<usize> for Mat4 {
+    type Output = [f32; 4];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.inner[index]
+    }
+}
+
+impl IndexMut<usize> for Mat4 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.inner[index]
+    }
+}
+
+impl Index<(usize, usize)> for Mat4 {
+    type Output = f32;
+
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
+        &self.inner[index.0][index.1]
+    }
+}
+
+impl IndexMut<(usize, usize)> for Mat4 {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        &mut self.inner[index.0][index.1]
+    }
+}
+
+impl Mat4 {
+    /// Return an identity matrix
+    pub fn identity() -> Self {
+        Mat4 {
+            inner: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
+    pub fn projection(aspect_ratio: f32, fov: f32, far: f32, near: f32) -> Self {
+        Mat4 {
+            inner: [
+                [1.0 / (aspect_ratio * f32::tan(fov / 2.0)), 0.0, 0.0, 0.0],
+                [0.0, 1.0 / f32::tan(fov / 2.0), 0.0, 0.0],
+                [
+                    0.0,
+                    0.0,
+                    -(far + near) / (far - near),
+                    -2.0 * far * near / (far - near),
+                ],
+                [0.0, 0.0, -1.0, 1.0],
+            ],
+        }
+    }
+
+    pub fn to_array(&self) -> [[f32; 4]; 4] {
+        self.inner
+    }
+
+    /// Rotation around the z-axis by specified angle in radians.
+    pub fn rotate(&mut self, angle: f32) -> &mut Self {
+        self.inner[0][0] *= f32::cos(angle);
+        self.inner[0][1] *= -f32::sin(angle);
+        self.inner[1][0] *= f32::sin(angle);
+        self.inner[1][1] *= f32::cos(angle);
+        self
+    }
+
+    /// Moves the position to specified coordinates.
+    pub fn translate(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
+        self.inner[3][0] = x;
+        self.inner[3][1] = y;
+        self.inner[3][2] = z;
+        self
+    }
+
+    /// Scale individal axis.
+    pub fn scale(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
+        self.inner[0][0] *= x;
+        self.inner[1][1] *= y;
+        self.inner[2][2] *= z;
+        self
+    }
+
+    /// Scale all axis by `s`.
+    pub fn scale_uniformly(&mut self, s: f32) -> &mut Self {
+        self.scale(s, s, s)
+    }
+
+    pub fn multiply_by(&mut self, other: &Self) -> &mut Self {
+        let mut result = [[0.0; 4]; 4];
+        for i in 0..4 {
+            for j in 0..4 {
+                for k in 0..4 {
+                    result[i][j] += self.inner[i][k] * other.inner[k][j];
+                }
+            }
+        }
+        self.inner = result;
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn mat_mult_1() {
+        let mut mat1 = Mat4::identity();
+        let mut k: f32 = 0.;
+        for i in 0..4 {
+            for j in 0..4 {
+                mat1[i][j] = k;
+                k += 1.;
+            }
+        }
+        println!("{}", mat1);
+
+        let mut mat2 = Mat4::identity();
+        let mut k: f32 = 4. * 4.;
+        for i in 0..4 {
+            for j in 0..4 {
+                mat2[i][j] = k;
+                k -= 1.;
+            }
+        }
+        println!("{}", mat2);
+        mat1.multiply_by(&mat2);
+
+        assert_eq!(
+            mat1,
+            [
+                [40., 34., 28., 22.],
+                [200., 178., 156., 134.],
+                [360., 322., 284., 246.],
+                [520., 466., 412., 358.],
+            ]
+            .into()
+        );
+
+        println!("{}", mat1);
+    }
+}

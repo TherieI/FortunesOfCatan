@@ -1,11 +1,7 @@
-use glium::backend::{glutin::Display, Facade};
-use glium::glutin::surface::WindowSurface;
+use glium::backend::Facade;
 use glium::{Frame, Surface};
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyEvent, MouseButton};
-use winit::event_loop::EventLoop;
-use winit::window::Window;
-
 use crate::settlers::base::BaseGame;
 
 pub trait Scene {
@@ -41,7 +37,7 @@ impl Settlers {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&mut self, imgui_debug: bool) -> Result<(), Box<dyn std::error::Error>> {
         // =======================================
         let event_loop = winit::event_loop::EventLoopBuilder::new()
             .build()
@@ -49,6 +45,8 @@ impl Settlers {
         let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
             .with_title("Gamblers of Catan")
             .build(&event_loop);
+
+        // ================ IMGUI ========================
 
         let mut base_game = BaseGame::new(&display);
         // Game loop
@@ -88,7 +86,7 @@ impl Settlers {
     }
 }
 
-pub fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main(imgui_debug: bool) -> Result<(), Box<dyn std::error::Error>> {
     let mut game = Settlers::new();
-    game.run()
+    game.run(imgui_debug)
 }
