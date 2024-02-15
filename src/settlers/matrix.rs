@@ -1,6 +1,7 @@
 // use std::ops::Mul;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Index, IndexMut};
+use std::vec;
 
 #[derive(PartialEq, Debug)]
 pub struct Mat4 {
@@ -80,6 +81,26 @@ impl Mat4 {
                 [0.0, 0.0, -1.0, 1.0],
             ],
         }
+    }
+
+    pub fn look_at(eye: (f32, f32, f32), center: (f32, f32, f32), up: (f32, f32, f32)) -> Mat4 {
+        // https://stackoverflow.com/questions/19740463/lookat-function-im-going-crazy
+        let normalize = | vec3: (f32, f32, f32)| -> (f32, f32, f32) {
+            let (x, y, z) = vec3;
+            // Calculate the magnitude
+            let magnitude = (x.powi(2) + y.powi(2) + z.powi(2)).sqrt();
+            // Check if the magnitude is not zero to avoid division by zero
+            if magnitude != 0.0 {
+                // Normalize the vector
+                let normalized = (x / magnitude, y / magnitude, z / magnitude);
+                normalized
+            } else {
+                // Return the original vector if the magnitude is zero
+                vec3
+            }
+        };
+        // let f = normalize()
+        todo!()
     }
 
     pub fn to_array(&self) -> [[f32; 4]; 4] {
