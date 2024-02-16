@@ -1,7 +1,50 @@
-// use std::ops::Mul;
 use std::fmt::{Display, Formatter, Result};
+use std::ops::Sub;
 use std::ops::{Index, IndexMut};
-use std::vec;
+
+#[derive(Clone, Copy)]
+pub struct Vec3(f32, f32, f32);
+
+impl Vec3 {
+    pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
+        Vec3(x, y, z)
+    }
+
+    pub fn magnitude(&self) -> f32 {
+        (self.0.powi(2) + self.1.powi(2) + self.2.powi(2)).sqrt()
+    }
+
+    pub fn normalize(&self) -> Vec3 {
+        let mag = self.magnitude();
+        Vec3::new(self.0 / mag, self.1 / mag, self.2 / mag)
+    }
+
+    pub fn cross(&self, other: &Self) -> Self {
+        Vec3::new(
+            self.1 * other.2 - self.2 * other.1,
+            self.2 * other.0 - self.0 * other.2,
+            self.0 * other.1 - self.1 * other.0,
+        )
+    }
+
+    pub fn dot(&self, other: &Self) -> f32 {
+        self.0 * other.0 + self.1 * other.1 + self.2 * other.2
+    }
+}
+
+impl From<(f32, f32, f32)> for Vec3 {
+    fn from(tuple: (f32, f32, f32)) -> Self {
+        Vec3::new(tuple.0, tuple.1, tuple.2)
+    }
+}
+
+impl Sub for Vec3 {
+    type Output = Self;
+
+    fn sub(self, other: Vec3) -> Self {
+        Vec3::new(self.0 - other.0, self.1 - other.1, self.2 - other.2)
+    }
+}
 
 #[derive(PartialEq, Debug)]
 pub struct Mat4 {
@@ -55,6 +98,18 @@ impl IndexMut<(usize, usize)> for Mat4 {
 }
 
 impl Mat4 {
+    /// Returns an empty 4x4 Matrix
+    pub fn new() -> Self {
+        Mat4 {
+            inner: [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+        }
+    }
+
     /// Return an identity matrix
     pub fn identity() -> Self {
         Mat4 {
@@ -67,6 +122,7 @@ impl Mat4 {
         }
     }
 
+    // Returns a projection matrix
     pub fn projection(aspect_ratio: f32, fov: f32, far: f32, near: f32) -> Self {
         Mat4 {
             inner: [
@@ -78,29 +134,37 @@ impl Mat4 {
                     -(far + near) / (far - near),
                     -2.0 * far * near / (far - near),
                 ],
-                [0.0, 0.0, -1.0, 1.0],
+                [0.0, 0.0, -1.0, 1.],
             ],
         }
     }
 
     pub fn look_at(eye: (f32, f32, f32), center: (f32, f32, f32), up: (f32, f32, f32)) -> Mat4 {
         // https://stackoverflow.com/questions/19740463/lookat-function-im-going-crazy
-        let normalize = | vec3: (f32, f32, f32)| -> (f32, f32, f32) {
-            let (x, y, z) = vec3;
-            // Calculate the magnitude
-            let magnitude = (x.powi(2) + y.powi(2) + z.powi(2)).sqrt();
-            // Check if the magnitude is not zero to avoid division by zero
-            if magnitude != 0.0 {
-                // Normalize the vector
-                let normalized = (x / magnitude, y / magnitude, z / magnitude);
-                normalized
-            } else {
-                // Return the original vector if the magnitude is zero
-                vec3
-            }
-        };
-        // let f = normalize()
-        todo!()
+        let eye: Vec3 = eye.into();
+        let center: Vec3 = center.into();
+        let up: Vec3 = up.into();
+
+        let f = (center - eye).normalize();
+        let u = up.normalize();
+        let s = f.cross(&u).normalize();
+        let u = s.cross(&f);
+
+        let mut view = Self::new();
+        view[0][0] = s.0;
+        view[1][0] = s.1;
+        view[2][0] = s.2;
+        view[0][1] = u.0;
+        view[1][1] = u.1;
+        view[2][1] = u.2;
+        view[0][2] = -f.0;
+        view[1][2] = -f.1;
+        view[2][2] = -f.2;
+        view[3][0] = -s.dot(&eye);
+        view[3][1] = -u.dot(&eye);
+        view[3][2] = f.dot(&eye);
+        view[3][3] = 1.;
+        view
     }
 
     pub fn to_array(&self) -> [[f32; 4]; 4] {

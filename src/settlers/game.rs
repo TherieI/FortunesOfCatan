@@ -1,8 +1,30 @@
+use crate::settlers::base::BaseGame;
 use glium::backend::Facade;
 use glium::{Frame, Surface};
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, KeyEvent, MouseButton};
-use crate::settlers::base::BaseGame;
+use std::time::{Duration, Instant};
+
+pub struct DeltaTime {
+    last: Instant,
+}
+
+impl DeltaTime {
+    pub fn new() -> Self {
+        DeltaTime {
+            last: Instant::now()
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.last = Instant::now();
+    }
+
+    pub fn delta(&self) -> f32 {
+        self.last.elapsed().as_secs_f32()
+    }
+}
+
 
 pub trait Scene {
     // Called on mouse move
