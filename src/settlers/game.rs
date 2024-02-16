@@ -1,9 +1,9 @@
 use crate::settlers::base::BaseGame;
 use glium::backend::Facade;
 use glium::{Frame, Surface};
-use winit::dpi::PhysicalPosition;
-use winit::event::{ElementState, KeyEvent, MouseButton};
 use std::time::{Duration, Instant};
+use winit::dpi::{PhysicalPosition, PhysicalSize};
+use winit::event::{ElementState, KeyEvent, MouseButton};
 
 pub struct DeltaTime {
     last: Instant,
@@ -12,7 +12,7 @@ pub struct DeltaTime {
 impl DeltaTime {
     pub fn new() -> Self {
         DeltaTime {
-            last: Instant::now()
+            last: Instant::now(),
         }
     }
 
@@ -25,10 +25,9 @@ impl DeltaTime {
     }
 }
 
-
 pub trait Scene {
     // Called on mouse move
-    fn mouse_move(&mut self, position: PhysicalPosition<f64>);
+    fn mouse_move(&mut self, position: PhysicalPosition<f64>, window_dimensions: PhysicalSize<u32>);
     // Called on recieving mouse input
     fn mouse_input(&mut self, state: ElementState, button: MouseButton);
     // Called on recieving keyboard input
@@ -81,8 +80,9 @@ impl Settlers {
                     }
                     // Input events
                     winit::event::WindowEvent::CursorMoved { position, .. } => {
-                        base_game.mouse_move(position)
+                        base_game.mouse_move(position, window.inner_size());
                     }
+
                     winit::event::WindowEvent::MouseInput { state, button, .. } => {
                         base_game.mouse_input(state, button)
                     }
@@ -91,7 +91,9 @@ impl Settlers {
                     }
 
                     winit::event::WindowEvent::RedrawRequested => {
+                        // Update any logic
                         base_game.update().unwrap();
+                        // Create frame canvas
                         let mut target = display.draw();
                         target.clear_color(0.0, 0.5, 0.6, 1.0);
                         base_game.draw(&display, target).finish().unwrap();

@@ -3,18 +3,62 @@ use crate::settlers::shader::create_program;
 use crate::settlers::Board;
 use glium::backend::Facade;
 use glium::{Frame, IndexBuffer, Program, Surface, VertexBuffer};
-use winit::dpi::PhysicalPosition;
+use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton};
 
 use super::camera::Camera;
 use super::game::DeltaTime;
 use super::matrix::Mat4;
 
+const MOUSE_SPEED: f32 = 10.;
+
+pub struct Mouse {
+    left_click_pressed: bool,
+    last_mouse_pos: PhysicalPosition<f64>,
+}
+
+impl Mouse {
+    pub fn new() -> Self {
+        Mouse {
+            left_click_pressed: false,
+            last_mouse_pos: PhysicalPosition::new(0., 0.),
+        }
+    }
+
+    pub fn update_buttons(&mut self, state: ElementState, button: MouseButton) {
+        match state {
+            ElementState::Pressed => {
+                if button == MouseButton::Left {
+                    self.left_click_pressed = true;
+                }
+            }
+            ElementState::Released => {
+                if button == MouseButton::Left {
+                    self.left_click_pressed = false;
+                }
+            }
+        }
+    }
+
+    pub fn update_cursor(&mut self, normal_pos: PhysicalPosition<f64>) {
+        self.last_mouse_pos = normal_pos;
+    }
+
+    pub fn right_pressed(&self) -> bool {
+        self.left_click_pressed
+    }
+
+    pub fn last_pos(&self) -> PhysicalPosition<f64> {
+        self.last_mouse_pos
+    }
+}
+
 pub struct BaseGame {
     board: Board<5, 5>,
     hex_shader: Program,
     camera: Camera,
-    delta_time: DeltaTime
+    delta_time: DeltaTime,
+    mouse: Mouse,
 }
 
 impl BaseGame {
@@ -28,7 +72,8 @@ impl BaseGame {
             hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", None)
                 .expect("Shaders should be found."),
             camera: Camera::new(0., 0.),
-            delta_time: DeltaTime::new()
+            delta_time: DeltaTime::new(),
+            mouse: Mouse::new(),
         }
     }
 
@@ -44,19 +89,38 @@ impl BaseGame {
 
 impl Scene for BaseGame {
     // Called on mouse move
-    fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
+    fn mouse_move(
+        &mut self,
+        position: PhysicalPosition<f64>,
+        window_dimensions: PhysicalSize<u32>,
+    ) {
+        // println!("Camera=({}, {})", self.camera.position().0, self.camera.position().1);
+        let last_pos = self.mouse.last_pos();
+
+        if self.mouse.left_click_pressed {
+            self.camera.move_to(|x, y| {
+                (
+                    x + (last_pos.x - position.x) as f32 * MOUSE_SPEED / window_dimensions.width as f32,
+                    y - (last_pos.y - position.y) as f32 * MOUSE_SPEED / window_dimensions.height as f32,
+                )
+            })
+        }
+        self.mouse.update_cursor(position);
     }
+
     // Called on recieving mouse input
-    fn mouse_input(&mut self, state: ElementState, button: MouseButton) {}
+    fn mouse_input(&mut self, state: ElementState, button: MouseButton) {
+        self.mouse.update_buttons(state, button);
+    }
     // Called on recieving keyboard input
     fn keyboard_input(&mut self, event: KeyEvent) {
-        use winit::keyboard::{PhysicalKey, KeyCode};
+        use winit::keyboard::{KeyCode, PhysicalKey};
         let move_const = 100.;
         match &event.physical_key {
-            PhysicalKey::Code(KeyCode::KeyW) => self.camera.move_to(|x, y| {
-                (x, y + move_const * self.delta_time.delta())
-            }),
-            _ => ()
+            PhysicalKey::Code(KeyCode::KeyW) => self
+                .camera
+                .move_to(|x, y| (x, y + move_const * self.delta_time.delta())),
+            _ => (),
         }
     }
 

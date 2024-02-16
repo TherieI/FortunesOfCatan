@@ -13,7 +13,11 @@ impl Camera {
     }
 
     pub fn view_matrix(&self) -> Mat4 {
-        Mat4::look_at((self.pos.0, self.pos.1, 0.), (self.pos.0, self.pos.1, -1.), (0., 1., 0.))
+        Mat4::look_at(
+            (self.pos.0, self.pos.1, 0.),
+            (self.pos.0, self.pos.1, -1.),
+            (0., 1., 0.),
+        )
     }
 
     /// Move camera to a new position. Closure parameters are the camera's current position.
