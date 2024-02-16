@@ -16,15 +16,39 @@ const BOARD_OFFSET: (f32, f32) = (5., 4.2);
 pub struct Vertex {
     pos: [f32; 2],
     tex_coords: [f32; 2],
+    /// Contains the resource & value of the hex
+    /// Resource: First 8 bits, Hex value: Next 8 bits
+    /// Resource | ID
+    /// None     | 0
+    /// Desert   | 1
+    /// Brick    | 2
+    /// Wood     | 3
+    /// Ore      | 4
+    /// Wheat    | 5
+    /// Sheep    | 6
+    hex_meta: u32,
 }
-implement_vertex!(Vertex, pos, tex_coords);
+implement_vertex!(Vertex, pos, tex_coords, hex_meta);
 
 impl Vertex {
     fn new(x: f32, y: f32, s: f32, t: f32) -> Vertex {
         Vertex {
             pos: [x, y],
             tex_coords: [s, t],
+            hex_meta: 0,
         }
+    }
+
+    fn add_meta(&mut self, resource: Option<Resource>) {
+        self.hex_meta = match resource {
+            Some(Resource::Brick(n)) => 0u32 | 2 | (n as u32) << 8,
+            Some(Resource::Wood(n)) => 0u32 | 3 | (n as u32) << 8,
+            Some(Resource::Ore(n)) => 0u32 | 4 | (n as u32) << 8,
+            Some(Resource::Wheat(n)) => 0u32 | 5 | (n as u32) << 8,
+            Some(Resource::Sheep(n)) => 0u32 | 6 | (n as u32) << 8,
+            Some(Resource::Desert) => 0u32 | 1,
+            None => 0,
+        } 
     }
 }
 
@@ -145,17 +169,24 @@ impl<const I: usize, const J: usize> Board<I, J> {
         Board { tiles }
     }
 
-    fn verts_of_pos(&self, hex_pos: (f32, f32)) -> Vec<Vertex> {
+    fn verts_of_pos(&self, hex_pos: (f32, f32), resource: Resource) -> Vec<Vertex> {
         let hex_radius = 2.7f32;
         let mut vertices = Vec::new();
-        vertices.push(Vertex::new(hex_pos.0, hex_pos.1, 0., 0.));
+        
+        let mut top_vertex = Vertex::new(hex_pos.0, hex_pos.1, 0., 0.);
+        top_vertex.add_meta(Some(resource));
+        vertices.push(top_vertex);
         for i in 0..6 {
-            vertices.push(Vertex::new(
-                hex_pos.0 + hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.),
-                hex_pos.1 + hex_radius * f32::sin(2. * PI * i as f32 / 6. + PI / 2.),
-                0.,
-                0.,
-            ))
+            let pos_x = hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.);
+            let pos_y = hex_radius * f32::sin(2. * PI * i as f32 / 6. + PI / 2.);
+            let mut vertex = Vertex::new(
+                hex_pos.0 + pos_x,
+                hex_pos.1 + pos_y,
+                pos_x + 0.5,
+                pos_y + 0.5,
+            );
+            vertex.add_meta(Some(resource));
+            vertices.push(vertex)
         }
         vertices
     }
@@ -176,7 +207,7 @@ impl<const I: usize, const J: usize> Board<I, J> {
                     let mut hex_verts = self.verts_of_pos((
                         BOARD_OFFSET.0 * i as f32 + offset,
                         BOARD_OFFSET.1 * j as f32,
-                    ));
+                    ), res);
                     // let mut out = String::new();
                     // hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
                     // println!("{}", &out[0..out.len()-2]);

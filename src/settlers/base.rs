@@ -2,7 +2,7 @@ use crate::settlers::game::Scene;
 use crate::settlers::shader::create_program;
 use crate::settlers::Board;
 use glium::backend::Facade;
-use glium::{Frame, IndexBuffer, Program, Surface, VertexBuffer};
+use glium::{Frame, IndexBuffer, Program, Surface, VertexBuffer, Texture2d};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton};
 
@@ -44,7 +44,7 @@ impl Mouse {
         self.last_mouse_pos = normal_pos;
     }
 
-    pub fn right_pressed(&self) -> bool {
+    pub fn left_pressed(&self) -> bool {
         self.left_click_pressed
     }
 
@@ -56,6 +56,7 @@ impl Mouse {
 pub struct BaseGame {
     board: Board<5, 5>,
     hex_shader: Program,
+    texture_map: Texture2d,
     camera: Camera,
     delta_time: DeltaTime,
     mouse: Mouse,
@@ -67,10 +68,17 @@ impl BaseGame {
         F: Sized + Facade,
     {
         let board: Board<5, 5> = Board::random_default();
+        let image = image::load(std::io::Cursor::new(&include_bytes!("../../assets/hex/brick.png")),
+                        image::ImageFormat::Png).unwrap().to_rgba8();
+        let image_dimensions = image.dimensions();
+        let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = glium::texture::Texture2d::new(facade, image).unwrap();
+
         Self {
             board,
             hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", None)
                 .expect("Shaders should be found."),
+            texture_map: texture,
             camera: Camera::new(0., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
@@ -94,10 +102,8 @@ impl Scene for BaseGame {
         position: PhysicalPosition<f64>,
         window_dimensions: PhysicalSize<u32>,
     ) {
-        // println!("Camera=({}, {})", self.camera.position().0, self.camera.position().1);
         let last_pos = self.mouse.last_pos();
-
-        if self.mouse.left_click_pressed {
+        if self.mouse.left_pressed() {
             self.camera.move_to(|x, y| {
                 (
                     x + (last_pos.x - position.x) as f32 * MOUSE_SPEED / window_dimensions.width as f32,
@@ -144,7 +150,7 @@ impl Scene for BaseGame {
                 &vertex_buffer,
                 &index_buffer,
                 &self.hex_shader,
-                &uniform! { perspective: self.mvp()},
+                &uniform! { perspective: self.mvp(), tex_map: &self.texture_map},
                 &Default::default(),
             )
             .unwrap();
