@@ -172,18 +172,19 @@ impl<const I: usize, const J: usize> Board<I, J> {
     fn verts_of_pos(&self, hex_pos: (f32, f32), resource: Resource) -> Vec<Vertex> {
         let hex_radius = 2.7f32;
         let mut vertices = Vec::new();
-        
-        let mut top_vertex = Vertex::new(hex_pos.0, hex_pos.1, 0., 0.);
-        top_vertex.add_meta(Some(resource));
-        vertices.push(top_vertex);
+        // Create vertex for center of hexagon
+        let mut middle_vertex = Vertex::new(hex_pos.0, hex_pos.1, 0.5, 0.5);
+        middle_vertex.add_meta(Some(resource));
+        vertices.push(middle_vertex);
+        // Create vertex for each 6 points of hexagon
         for i in 0..6 {
             let pos_x = hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.);
             let pos_y = hex_radius * f32::sin(2. * PI * i as f32 / 6. + PI / 2.);
             let mut vertex = Vertex::new(
                 hex_pos.0 + pos_x,
                 hex_pos.1 + pos_y,
-                pos_x + 0.5,
-                pos_y + 0.5,
+                pos_x / 6. + 0.5,
+                pos_y / 6. + 0.5,
             );
             vertex.add_meta(Some(resource));
             vertices.push(vertex)

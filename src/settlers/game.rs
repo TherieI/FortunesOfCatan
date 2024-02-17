@@ -3,7 +3,7 @@ use glium::backend::Facade;
 use glium::{Frame, Surface};
 use std::time::{Duration, Instant};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::event::{ElementState, KeyEvent, MouseButton};
+use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
 pub struct DeltaTime {
     last: Instant,
@@ -32,6 +32,8 @@ pub trait Scene {
     fn mouse_input(&mut self, state: ElementState, button: MouseButton);
     // Called on recieving keyboard input
     fn keyboard_input(&mut self, event: KeyEvent);
+    // Called on recieving mouse scroll input
+    fn scroll_input(&mut self, delta: MouseScrollDelta, phase: TouchPhase);
 
     // Called every time before draw
     fn update(&mut self) -> Result<(), Box<dyn std::error::Error>>;
@@ -70,27 +72,32 @@ impl Settlers {
         // ================ IMGUI ========================
 
         let mut base_game = BaseGame::new(&display);
+        use winit::event::{Event, WindowEvent};
         // Game loop
         let _ = event_loop.run(move |event, window_target| {
             match event {
                 winit::event::Event::WindowEvent { event, .. } => match event {
-                    winit::event::WindowEvent::CloseRequested => window_target.exit(),
-                    winit::event::WindowEvent::Resized(window_size) => {
+                    WindowEvent::CloseRequested => window_target.exit(),
+                    WindowEvent::Resized(window_size) => {
                         display.resize(window_size.into());
                     }
                     // Input events
-                    winit::event::WindowEvent::CursorMoved { position, .. } => {
+                    WindowEvent::CursorMoved { position, .. } => {
                         base_game.mouse_move(position, window.inner_size());
                     }
 
-                    winit::event::WindowEvent::MouseInput { state, button, .. } => {
-                        base_game.mouse_input(state, button)
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        base_game.mouse_input(state, button);
                     }
-                    winit::event::WindowEvent::KeyboardInput { event, .. } => {
-                        base_game.keyboard_input(event)
+                    WindowEvent::KeyboardInput { event, .. } => {
+                        base_game.keyboard_input(event);
                     }
 
-                    winit::event::WindowEvent::RedrawRequested => {
+                    WindowEvent::MouseWheel { delta, phase, .. } => {
+                        base_game.scroll_input(delta, phase);
+                    }
+
+                    WindowEvent::RedrawRequested => {
                         // Update any logic
                         base_game.update().unwrap();
                         // Create frame canvas
@@ -100,7 +107,7 @@ impl Settlers {
                     }
                     _ => (),
                 },
-                winit::event::Event::AboutToWait => {
+                Event::AboutToWait => {
                     window.request_redraw();
                 }
                 _ => (),

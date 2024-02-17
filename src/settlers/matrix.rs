@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter, Result};
 use std::ops::Sub;
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vec3(f32, f32, f32);
 
 impl Vec3 {
@@ -29,6 +29,10 @@ impl Vec3 {
 
     pub fn dot(&self, other: &Self) -> f32 {
         self.0 * other.0 + self.1 * other.1 + self.2 * other.2
+    }
+
+    pub fn as_tuple(&self) -> (f32, f32, f32) {
+        (self.0, self.1, self.2)
     }
 }
 
@@ -139,12 +143,8 @@ impl Mat4 {
         }
     }
 
-    pub fn look_at(eye: (f32, f32, f32), center: (f32, f32, f32), up: (f32, f32, f32)) -> Mat4 {
+    pub fn look_at(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
         // https://stackoverflow.com/questions/19740463/lookat-function-im-going-crazy
-        let eye: Vec3 = eye.into();
-        let center: Vec3 = center.into();
-        let up: Vec3 = up.into();
-
         let f = (center - eye).normalize();
         let u = up.normalize();
         let s = f.cross(&u).normalize();
