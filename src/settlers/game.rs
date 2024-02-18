@@ -1,7 +1,7 @@
 use crate::settlers::base::BaseGame;
 use glium::backend::Facade;
 use glium::{Frame, Surface};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
@@ -27,13 +27,15 @@ impl DeltaTime {
 
 pub trait Scene {
     // Called on mouse move
-    fn mouse_move(&mut self, position: PhysicalPosition<f64>, window_dimensions: PhysicalSize<u32>);
+    fn mouse_move(&mut self, position: PhysicalPosition<f64>);
     // Called on recieving mouse input
     fn mouse_input(&mut self, state: ElementState, button: MouseButton);
     // Called on recieving keyboard input
     fn keyboard_input(&mut self, event: KeyEvent);
     // Called on recieving mouse scroll input
     fn scroll_input(&mut self, delta: MouseScrollDelta, phase: TouchPhase);
+    // Called on recieving window size update
+    fn window_size(&mut self, new_size: PhysicalSize<u32>);
 
     // Called every time before draw
     fn update(&mut self) -> Result<(), Box<dyn std::error::Error>>;
@@ -67,6 +69,10 @@ impl Settlers {
             .expect("event loop building");
         let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
             .with_title("Gamblers of Catan")
+            .with_inner_size(
+                crate::settings::WINDOW_DEFAULT_SIZE.width,
+                crate::settings::WINDOW_DEFAULT_SIZE.height,
+            )
             .build(&event_loop);
 
         // ================ IMGUI ========================
@@ -80,10 +86,11 @@ impl Settlers {
                     WindowEvent::CloseRequested => window_target.exit(),
                     WindowEvent::Resized(window_size) => {
                         display.resize(window_size.into());
+                        base_game.window_size(window.inner_size());
                     }
                     // Input events
                     WindowEvent::CursorMoved { position, .. } => {
-                        base_game.mouse_move(position, window.inner_size());
+                        base_game.mouse_move(position);
                     }
 
                     WindowEvent::MouseInput { state, button, .. } => {

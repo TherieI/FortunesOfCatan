@@ -8,7 +8,7 @@ out flat uint hex_tex;
 out flat uint hex_value;
 out vec2 f_tex_coords;
 
-uniform mat4 perspective;
+uniform mat4 u_mvp;
 
 uint get_hex_tex(in uint meta) {
     // First 8 bits of meta
@@ -25,5 +25,5 @@ void main() {
     hex_value = get_hex_value(hex_meta);
     f_tex_coords = tex_coords;
 
-    gl_Position = perspective * vec4(pos, 0.0, 1.0);
+    gl_Position = u_mvp * vec4(pos, 0.0, 1.0);
 }

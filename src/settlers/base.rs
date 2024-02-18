@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::settlers::game::Scene;
 use crate::settlers::shader::create_program;
 use crate::settlers::Board;
@@ -54,8 +56,12 @@ impl Mouse {
 }
 
 pub struct BaseGame {
+    window_dim: PhysicalSize<u32>,
+    // Keep track of the program time
+    time: Instant,
     board: Board<5, 5>,
     hex_shader: Program,
+    // Texture for the hex's
     texture_map: Texture2d,
     camera: Camera,
     delta_time: DeltaTime,
@@ -69,8 +75,9 @@ impl BaseGame {
         F: Sized + Facade,
     {
         let board: Board<5, 5> = Board::random_default();
+        // Generate texture for our hex's
         let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../assets/hex/brick.png")),
+            std::io::Cursor::new(&include_bytes!("../../assets/hex/resource_tilemap_reilly.png")),
             image::ImageFormat::Png,
         )
         .unwrap()
@@ -80,7 +87,10 @@ impl BaseGame {
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
         let texture = glium::texture::Texture2d::new(facade, image).unwrap();
 
+        use crate::settings::WINDOW_DEFAULT_SIZE;
         Self {
+            window_dim: WINDOW_DEFAULT_SIZE,
+            time: Instant::now(),
             board,
             hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", None)
                 .expect("Shaders should be found."),
@@ -93,7 +103,12 @@ impl BaseGame {
     }
 
     fn mvp(&self) -> [[f32; 4]; 4] {
-        let mut projection = Mat4::projection(16. / 8., 90., 1.0, -1.0);
+        let mut projection = Mat4::projection(
+            self.window_dim.width as f32 / self.window_dim.height as f32,
+            90.,
+            1.0,
+            -1.0,
+        );
         let mut transform = Mat4::identity();
         transform
             .translate(-0.4, -0.6, 0.)
@@ -106,19 +121,15 @@ impl BaseGame {
 
 impl Scene for BaseGame {
     // Called on mouse move
-    fn mouse_move(
-        &mut self,
-        position: PhysicalPosition<f64>,
-        window_dimensions: PhysicalSize<u32>,
-    ) {
+    fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         let last_pos = self.mouse.last_pos();
         if self.mouse.left_pressed() {
             self.camera.move_to(|x, y, z| {
                 (
                     x + (last_pos.x - position.x) as f32 * MOUSE_SPEED
-                        / window_dimensions.width as f32,
+                        / self.window_dim.width as f32,
                     y - (last_pos.y - position.y) as f32 * MOUSE_SPEED
-                        / window_dimensions.height as f32,
+                        / self.window_dim.height as f32,
                     z,
                 )
             })
@@ -133,9 +144,7 @@ impl Scene for BaseGame {
 
     fn scroll_input(&mut self, delta: MouseScrollDelta, _phase: TouchPhase) {
         match delta {
-            MouseScrollDelta::LineDelta(_, scroll) => {
-                self.scale += scroll / 200.
-            }
+            MouseScrollDelta::LineDelta(_, scroll) => self.scale += scroll / 200.,
             _ => (),
         }
     }
@@ -152,6 +161,10 @@ impl Scene for BaseGame {
         }
     }
 
+    fn window_size(&mut self, new_size: PhysicalSize<u32>) {
+        self.window_dim = new_size;
+    }
+
     // Called every time before draw
     fn update(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.delta_time.update();
@@ -166,13 +179,26 @@ impl Scene for BaseGame {
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer =
             IndexBuffer::new(facade, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
+        use glium::uniforms::{
+            MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerBehavior,
+        };
+        // Behavior doesnt seem to be interpolating properly
+        let behavior = SamplerBehavior {
+            minify_filter: MinifySamplerFilter::Nearest,
+            magnify_filter: MagnifySamplerFilter::Nearest,
+            ..Default::default()
+        };
 
         frame
             .draw(
                 &vertex_buffer,
                 &index_buffer,
                 &self.hex_shader,
-                &uniform! { perspective: self.mvp(), tex_map: &self.texture_map},
+                &uniform! { u_mvp: self.mvp(),
+                    u_resolution: (self.window_dim.width, self.window_dim.height),
+                    u_time: self.time.elapsed().as_secs_f32(),
+                    tex_map: Sampler(&self.texture_map, behavior)
+                },
                 &Default::default(),
             )
             .unwrap();

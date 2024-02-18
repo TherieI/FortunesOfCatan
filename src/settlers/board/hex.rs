@@ -4,9 +4,7 @@ use crate::settlers::board::{
     card::{Gamble, Occupant, Resource},
     hex,
 };
-use glium::texture::texture2d::Texture2d;
-use glium::Surface;
-use rand::{seq::SliceRandom, thread_rng, Rng};
+use rand::{seq::SliceRandom, Rng};
 
 use std::fmt::{Display, Formatter};
 
@@ -48,7 +46,7 @@ impl Vertex {
             Some(Resource::Sheep(n)) => 0u32 | 6 | (n as u32) << 8,
             Some(Resource::Desert) => 0u32 | 1,
             None => 0,
-        } 
+        }
     }
 }
 
@@ -183,8 +181,8 @@ impl<const I: usize, const J: usize> Board<I, J> {
             let mut vertex = Vertex::new(
                 hex_pos.0 + pos_x,
                 hex_pos.1 + pos_y,
-                pos_x / 6. + 0.5,
-                pos_y / 6. + 0.5,
+                1.2 * pos_x / 6. + 0.5,
+                1.1 * pos_y / 6. + 0.5,
             );
             vertex.add_meta(Some(resource));
             vertices.push(vertex)
@@ -205,10 +203,13 @@ impl<const I: usize, const J: usize> Board<I, J> {
                     if j % 2 == 1 {
                         offset += BOARD_OFFSET.0 / 2.;
                     }
-                    let mut hex_verts = self.verts_of_pos((
-                        BOARD_OFFSET.0 * i as f32 + offset,
-                        BOARD_OFFSET.1 * j as f32,
-                    ), res);
+                    let mut hex_verts = self.verts_of_pos(
+                        (
+                            BOARD_OFFSET.0 * i as f32 + offset,
+                            BOARD_OFFSET.1 * j as f32,
+                        ),
+                        res,
+                    );
                     // let mut out = String::new();
                     // hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
                     // println!("{}", &out[0..out.len()-2]);
