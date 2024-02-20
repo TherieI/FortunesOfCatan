@@ -68,7 +68,7 @@ impl Settlers {
             .build()
             .expect("event loop building");
         let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
-            .with_title("Gamblers of Catan")
+            .with_title("Fortune of Catan")
             .with_inner_size(
                 crate::settings::WINDOW_DEFAULT_SIZE.width,
                 crate::settings::WINDOW_DEFAULT_SIZE.height,

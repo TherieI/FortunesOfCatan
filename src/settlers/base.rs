@@ -77,7 +77,7 @@ impl BaseGame {
         let board: Board<5, 5> = Board::random_default();
         // Generate texture for our hex's
         let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../assets/hex/resource_tilemap_reilly.png")),
+            std::io::Cursor::new(&include_bytes!("../../assets/hex/resource_tilemap_v1.png")),
             image::ImageFormat::Png,
         )
         .unwrap()
@@ -175,20 +175,18 @@ impl Scene for BaseGame {
     where
         F: ?Sized + Facade,
     {
+        // ============== Background ===============
+        
+
+        // ============== Hex tiles ================
         let (vertices, indices) = self.board.buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer =
             IndexBuffer::new(facade, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
         use glium::uniforms::{
-            MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerBehavior,
+            MagnifySamplerFilter, MinifySamplerFilter, Sampler,
         };
-        // Behavior doesnt seem to be interpolating properly
-        let behavior = SamplerBehavior {
-            minify_filter: MinifySamplerFilter::Nearest,
-            magnify_filter: MagnifySamplerFilter::Nearest,
-            ..Default::default()
-        };
-
+        
         frame
             .draw(
                 &vertex_buffer,
@@ -197,7 +195,9 @@ impl Scene for BaseGame {
                 &uniform! { u_mvp: self.mvp(),
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
-                    tex_map: Sampler(&self.texture_map, behavior)
+                    tex_map: Sampler::new(&self.texture_map)
+                        .minify_filter(MinifySamplerFilter::Nearest)
+                        .magnify_filter(MagnifySamplerFilter::Nearest)
                 },
                 &Default::default(),
             )
