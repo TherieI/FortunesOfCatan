@@ -13,7 +13,6 @@ const BOARD_OFFSET: (f32, f32) = (5., 4.2);
 #[derive(Clone, Copy)]
 pub struct Vertex {
     pos: [f32; 2],
-    tex_coords: [f32; 2],
     /// Contains the resource & value of the hex
     /// Resource: First 8 bits, Hex value: Next 8 bits
     /// Resource | ID
@@ -26,13 +25,12 @@ pub struct Vertex {
     /// Sheep    | 6
     hex_meta: u32,
 }
-implement_vertex!(Vertex, pos, tex_coords, hex_meta);
+implement_vertex!(Vertex, pos, hex_meta);
 
 impl Vertex {
-    fn new(x: f32, y: f32, s: f32, t: f32) -> Vertex {
+    fn new(x: f32, y: f32) -> Vertex {
         Vertex {
             pos: [x, y],
-            tex_coords: [s, t],
             hex_meta: 0,
         }
     }
@@ -45,6 +43,7 @@ impl Vertex {
             Some(Resource::Wheat(n)) => 0u32 | 5 | (n as u32) << 8,
             Some(Resource::Sheep(n)) => 0u32 | 6 | (n as u32) << 8,
             Some(Resource::Desert) => 0u32 | 1,
+            // Shouldn't ever be none
             None => 0,
         }
     }
@@ -167,68 +166,55 @@ impl<const I: usize, const J: usize> Board<I, J> {
         Board { tiles }
     }
 
-    fn verts_of_pos(&self, hex_pos: (f32, f32), resource: Resource) -> Vec<Vertex> {
-        let hex_radius = 2.7f32;
-        let mut vertices = Vec::new();
-        // Create vertex for center of hexagon
-        let mut middle_vertex = Vertex::new(hex_pos.0, hex_pos.1, 0.5, 0.5);
-        middle_vertex.add_meta(Some(resource));
-        vertices.push(middle_vertex);
-        // Create vertex for each 6 points of hexagon
-        for i in 0..6 {
-            let pos_x = hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.);
-            let pos_y = hex_radius * f32::sin(2. * PI * i as f32 / 6. + PI / 2.);
-            let mut vertex = Vertex::new(
-                hex_pos.0 + pos_x,
-                hex_pos.1 + pos_y,
-                1.2 * pos_x / 6. + 0.5,
-                1.1 * pos_y / 6. + 0.5,
-            );
-            vertex.add_meta(Some(resource));
-            vertices.push(vertex)
-        }
-        vertices
-    }
+    // fn verts_of_pos(&self, hex_pos: (f32, f32), resource: Resource) -> Vec<Vertex> {
+    //     let hex_radius = 2.7f32;
+    //     let mut vertices = Vec::new();
+    //     // Create vertex for center of hexagon
+    //     let mut middle_vertex = Vertex::new(hex_pos.0, hex_pos.1);
+    //     middle_vertex.add_meta(Some(resource));
+    //     vertices.push(middle_vertex);
+    //     // Create vertex for each 6 points of hexagon
+    //     for i in 0..6 {
+    //         let pos_x = hex_radius * f32::cos(2. * PI * i as f32 / 6. + PI / 2.);
+    //         let pos_y = hex_radius * f32::sin(2. * PI * i as f32 / 6. + PI / 2.);
+    //         let mut vertex = Vertex::new(
+    //             hex_pos.0 + pos_x,
+    //             hex_pos.1 + pos_y,
+    //             1.2 * pos_x / 6. + 0.5,
+    //             1.1 * pos_y / 6. + 0.5,
+    //         );
+    //         vertex.add_meta(Some(resource));
+    //         vertices.push(vertex)
+    //     }
+    //     vertices
+    // }
 
-    pub fn buffers(&self) -> (Vec<Vertex>, Vec<u32>) {
-        let mut total_verts = 0;
+    pub fn buffers(&self) -> Vec<Vertex> {
         let mut vertices = Vec::new();
-        let mut indices = Vec::new();
         for j in 0..J {
             for i in 0..I {
                 let resource = self.tiles[j][i].resource;
                 if let Some(res) = resource {
-                    // Land
-                    let mut offset: f32 = 0.;
-                    if j % 2 == 1 {
-                        offset += BOARD_OFFSET.0 / 2.;
-                    }
-                    let mut hex_verts = self.verts_of_pos(
-                        (
-                            BOARD_OFFSET.0 * i as f32 + offset,
-                            BOARD_OFFSET.1 * j as f32,
-                        ),
-                        res,
-                    );
-                    // let mut out = String::new();
-                    // hex_verts.iter().for_each(|v| out += format!("{}, ", v).as_ref());
-                    // println!("{}", &out[0..out.len()-2]);
-                    vertices.append(&mut hex_verts);
-                    let mut hex_inds: Vec<u32> =
-                        vec![0u32, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1]
-                            .iter()
-                            .map(|x| x + 7 * total_verts)
-                            .collect();
-                    // s
-                    indices.append(&mut hex_inds);
 
-                    total_verts += 1;
+                    let offset = if j % 2 == 1 {
+                        BOARD_OFFSET.0 / 2.
+                    } else {
+                        0.
+                    };
+                    
+                    let mut vertex = Vertex::new(
+                        BOARD_OFFSET.0 * i as f32 + offset,
+                        BOARD_OFFSET.1 * j as f32,
+                    );
+                    vertex.add_meta(Some(res));
+                    vertices.push(vertex);
+                    
                 } else {
                     // Water
                 }
             }
         }
-        (vertices, indices)
+        vertices
     }
 }
 

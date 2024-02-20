@@ -4,6 +4,7 @@ use crate::settlers::game::Scene;
 use crate::settlers::shader::create_program;
 use crate::settlers::Board;
 use glium::backend::Facade;
+use glium::index::NoIndices;
 use glium::{Frame, IndexBuffer, Program, Surface, Texture2d, VertexBuffer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
@@ -176,13 +177,12 @@ impl Scene for BaseGame {
         F: ?Sized + Facade,
     {
         // ============== Background ===============
-        
+
 
         // ============== Hex tiles ================
-        let (vertices, indices) = self.board.buffers();
+        let vertices  = self.board.buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
-        let index_buffer =
-            IndexBuffer::new(facade, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
+        let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
         use glium::uniforms::{
             MagnifySamplerFilter, MinifySamplerFilter, Sampler,
         };
@@ -203,5 +203,8 @@ impl Scene for BaseGame {
             )
             .unwrap();
         frame
+
+        // =============== Settlements / Cities / Roads ==================
+        
     }
 }
