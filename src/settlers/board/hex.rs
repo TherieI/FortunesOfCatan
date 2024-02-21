@@ -8,7 +8,7 @@ use rand::{seq::SliceRandom, Rng};
 
 use std::fmt::{Display, Formatter};
 
-const BOARD_OFFSET: (f32, f32) = (5., 4.2);
+const BOARD_OFFSET: (f32, f32) = (5., 5.);
 
 #[derive(Clone, Copy)]
 pub struct Vertex {

@@ -93,7 +93,7 @@ impl BaseGame {
             window_dim: WINDOW_DEFAULT_SIZE,
             time: Instant::now(),
             board,
-            hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", None)
+            hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", Some("glsl/hex.g.glsl"))
                 .expect("Shaders should be found."),
             texture_map: texture,
             camera: Camera::new(0., 0.),
