@@ -9,9 +9,11 @@ use rand::{seq::SliceRandom, Rng};
 use std::fmt::{Display, Formatter};
 
 const BOARD_OFFSET: (f32, f32) = (5., 4.22);
+/// Maximum number of hex's on the board
+pub const MAX_HEX: u32 = 64;
 
 #[derive(Clone, Copy)]
-pub struct Vertex {
+pub struct HexVertex {
     pos: [f32; 2],
     /// Contains the resource & value of the hex
     /// Resource: First 8 bits, Hex value: Next 8 bits
@@ -25,17 +27,17 @@ pub struct Vertex {
     /// Sheep    | 6
     hex_meta: u32,
 }
-implement_vertex!(Vertex, pos, hex_meta);
+implement_vertex!(HexVertex, pos, hex_meta);
 
-impl Vertex {
-    fn new(x: f32, y: f32) -> Vertex {
-        Vertex {
+impl HexVertex {
+    pub fn new(x: f32, y: f32) -> HexVertex {
+        HexVertex {
             pos: [x, y],
             hex_meta: 0,
         }
     }
 
-    fn add_meta(&mut self, resource: Option<Resource>) {
+    pub fn add_meta(&mut self, resource: Option<Resource>) {
         self.hex_meta = match resource {
             Some(Resource::Brick(n)) => 0u32 | 2 | (n as u32) << 8,
             Some(Resource::Wood(n)) => 0u32 | 3 | (n as u32) << 8,
@@ -47,9 +49,13 @@ impl Vertex {
             None => 0,
         }
     }
+
+    pub fn position(&self) -> (f32, f32) {
+        self.pos.into()
+    }
 }
 
-impl Display for Vertex {
+impl Display for HexVertex {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "({}, {})", self.pos[0], self.pos[1])
     }
@@ -166,7 +172,7 @@ impl<const I: usize, const J: usize> Board<I, J> {
         Board { tiles }
     }
 
-    pub fn buffers(&self) -> Vec<Vertex> {
+    pub fn buffers(&self) -> Vec<HexVertex> {
         let mut vertices = Vec::new();
         for j in 0..J {
             for i in 0..I {
@@ -174,12 +180,8 @@ impl<const I: usize, const J: usize> Board<I, J> {
                 if let Some(res) = resource {
                     // Push a single point, the center of the hexagon, to the buffer
                     // The gpu will transform this point into a hexagon in the geometry shader
-                    let offset = if j % 2 == 1 {
-                        BOARD_OFFSET.0 / 2.
-                    } else {
-                        0.
-                    };
-                    let mut vertex = Vertex::new(
+                    let offset = if j % 2 == 1 { BOARD_OFFSET.0 / 2. } else { 0. };
+                    let mut vertex = HexVertex::new(
                         BOARD_OFFSET.0 * i as f32 + offset,
                         BOARD_OFFSET.1 * j as f32,
                     );
