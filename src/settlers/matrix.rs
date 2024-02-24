@@ -10,6 +10,18 @@ impl Vec3 {
         Vec3(x, y, z)
     }
 
+    pub fn x(&self) -> f32 {
+        self.0
+    }
+
+    pub fn y(&self) -> f32 {
+        self.1
+    }
+
+    pub fn z(&self) -> f32 {
+        self.2
+    }
+
     pub fn magnitude(&self) -> f32 {
         (self.0.powi(2) + self.1.powi(2) + self.2.powi(2)).sqrt()
     }

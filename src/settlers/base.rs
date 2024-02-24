@@ -113,7 +113,7 @@ impl<'p> BaseGame<'p> {
             board,
             program_manager,
             texture_map: texture,
-            camera: Camera::new(0., 0.),
+            camera: Camera::new(1., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
             scale: 0.13,
@@ -205,11 +205,14 @@ impl<'p> Scene for BaseGame<'p> {
                 .map(|vert| vert.position())
                 .enumerate()
                 .for_each(|(i, (x, y))| {
+                    let camera_position = self.camera.position();
                     arr[i] = (
-                        x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3],
-                        x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3],
+                        x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3]
+                            - camera_position.x() * self.scale,
+                        x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3]
+                            - camera_position.y() * self.scale,
                     );
-                    println!("{}, {}", arr[i].0, arr[i].1);
+                    // println!("{}, {}", arr[i].0, arr[i].1);
                     total_hex += 1;
                 });
             arr
@@ -234,7 +237,7 @@ impl<'p> Scene for BaseGame<'p> {
                     mvp: mvp,
                     total_hex: total_hex,
                     hex_positions: &hex_pos_buffer,
-                    screen_size: (self.window_dim.width, self.window_dim.height)
+                    u_resolution: (self.window_dim.width, self.window_dim.height)
                 },
                 &Default::default(),
             )
