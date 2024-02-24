@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use crate::settlers::board::{
     card::{Gamble, Occupant, Resource},
     hex,

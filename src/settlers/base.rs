@@ -193,6 +193,7 @@ impl<'p> Scene for BaseGame<'p> {
     where
         F: ?Sized + Facade,
     {
+        let mvp = self.mvp();
         // ============== Background ===============
         let mut total_hex: u32 = 0;
         // The board must have less than 64 total hex tiles
@@ -203,8 +204,12 @@ impl<'p> Scene for BaseGame<'p> {
                 .iter()
                 .map(|vert| vert.position())
                 .enumerate()
-                .for_each(|(i, pos)| {
-                    arr[i] = pos;
+                .for_each(|(i, (x, y))| {
+                    arr[i] = (
+                        x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3],
+                        x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3],
+                    );
+                    println!("{}, {}", arr[i].0, arr[i].1);
                     total_hex += 1;
                 });
             arr
@@ -226,6 +231,7 @@ impl<'p> Scene for BaseGame<'p> {
                     .program("bg")
                     .expect("Background program exists"),
                 &uniform! {
+                    mvp: mvp,
                     total_hex: total_hex,
                     hex_positions: &hex_pos_buffer,
                     screen_size: (self.window_dim.width, self.window_dim.height)
@@ -248,7 +254,7 @@ impl<'p> Scene for BaseGame<'p> {
                     .program_manager
                     .program("hex")
                     .expect("Hex program exists"),
-                &uniform! { u_mvp: self.mvp(),
+                &uniform! { u_mvp: mvp,
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
                     tex_map: Sampler::new(&self.texture_map)
