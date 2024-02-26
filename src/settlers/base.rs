@@ -198,7 +198,6 @@ impl<'p> Scene for BaseGame<'p> {
         let mvp = self.mvp();
         // ============== Background ===============
         let mut total_hex: u32 = 0;
-        const SCROLL_FACTOR: f32 = 0.3;
         // The board must have less than 64 total hex tiles
         let hex_positions: [(f32, f32); hex::MAX_HEX as usize] = {
             let mut arr = [(0.0, 0.0); hex::MAX_HEX as usize];
@@ -208,20 +207,11 @@ impl<'p> Scene for BaseGame<'p> {
                 .map(|vert| vert.position())
                 .enumerate()
                 .for_each(|(i, (x, y))| {
-                    // Assuming mvp is your 4x4 MVP matrix and camera_position is a Vec3 representing the camera position
+                    // Matrix transformation with camera position (Can't explain the +1 but its needed)
                     arr[i] = (
                         x * mvp[0][0] + y * mvp[0][1] + mvp[0][3] + mvp[3][0] + 1.,
                         x * mvp[1][0] + y * mvp[1][1] + mvp[1][3] + mvp[3][1] + 1.,
                     );
-                    
-
-                    // arr[i] = (
-                    //     x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3]
-                    //         - camera_position.x() * self.scale * SCROLL_FACTOR,
-                    //     x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3]
-                    //         - camera_position.y() * self.scale * SCROLL_FACTOR,
-                    // );
-                    // println!("{}, {}", arr[i].0, arr[i].1);
                     total_hex += 1;
                 });
             arr
