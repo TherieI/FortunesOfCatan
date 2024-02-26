@@ -11,14 +11,17 @@ uniform float u_scale;
 out vec4 color;
 
 const vec4 BROWN = vec4(1.0, 0.95, 0.85, 1.0);
-
 // Hexagon size
 const float HEX_SCALE = 0.9 * u_scale;
-
 // Not sure how I came up with this constant but without it the points from positions[64] dont match with the hex's
 const float SCALE_FACTOR = 0.5;
-
 const float ASPECT_RATIO = float(u_resolution.x) / float(u_resolution.y);
+
+// Random noise function
+float rand1dTo1d(float value, float mutator = 0.546) {
+	float random = fract(sin(value + mutator) * 143758.5453);
+	return random;
+}
 
 // If 'r' falls into the equation, r ≤ sec(1/3 * arcsin(sin(3θ))), then the point is within the hexgon
 bool is_land(vec2 polar_pos) {
@@ -43,7 +46,7 @@ void main() {
     for (uint i = 0u; i < total_hex; i++) {
         // A normalized point that is (x, y) distance from (0, 0)
         vec2 delta_origin = st - positions[i] * SCALE_FACTOR;
-        
+
         // Check if the fragment is inside hexagon
         if (is_land(polar_coordinates_of(vec2(delta_origin.x * ASPECT_RATIO, delta_origin.y)))) {
             // On land
