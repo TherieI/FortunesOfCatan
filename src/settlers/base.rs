@@ -113,7 +113,7 @@ impl<'p> BaseGame<'p> {
             board,
             program_manager,
             texture_map: texture,
-            camera: Camera::new(1., 0.),
+            camera: Camera::new(8., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
             scale: 0.13,
@@ -133,6 +133,7 @@ impl<'p> BaseGame<'p> {
             .scale_uniformly(self.scale);
         let view = self.camera.view_matrix();
         projection.multiply_by(&view).multiply_by(&transform);
+        // println!("{}", projection);
         projection.to_array()
     }
 }
@@ -144,7 +145,7 @@ impl<'p> Scene for BaseGame<'p> {
         if self.mouse.left_pressed() {
             self.camera.move_to(|x, y, z| {
                 (
-                    x + (last_pos.x - position.x) as f32 * MOUSE_SPEED
+                    x - (last_pos.x - position.x) as f32 * MOUSE_SPEED
                         / self.window_dim.width as f32,
                     y - (last_pos.y - position.y) as f32 * MOUSE_SPEED
                         / self.window_dim.height as f32,
@@ -180,6 +181,7 @@ impl<'p> Scene for BaseGame<'p> {
     }
 
     fn window_size(&mut self, new_size: PhysicalSize<u32>) {
+        println!("Scale [{}, {}]", new_size.width, new_size.height);
         self.window_dim = new_size;
     }
 
@@ -196,6 +198,7 @@ impl<'p> Scene for BaseGame<'p> {
         let mvp = self.mvp();
         // ============== Background ===============
         let mut total_hex: u32 = 0;
+        const SCROLL_FACTOR: f32 = 0.3;
         // The board must have less than 64 total hex tiles
         let hex_positions: [(f32, f32); hex::MAX_HEX as usize] = {
             let mut arr = [(0.0, 0.0); hex::MAX_HEX as usize];
@@ -205,13 +208,19 @@ impl<'p> Scene for BaseGame<'p> {
                 .map(|vert| vert.position())
                 .enumerate()
                 .for_each(|(i, (x, y))| {
-                    let camera_position = self.camera.position();
+                    // Assuming mvp is your 4x4 MVP matrix and camera_position is a Vec3 representing the camera position
                     arr[i] = (
-                        x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3]
-                            - camera_position.x() * self.scale,
-                        x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3]
-                            - camera_position.y() * self.scale,
+                        x * mvp[0][0] + y * mvp[0][1] + mvp[0][3] + mvp[3][0] + 1.,
+                        x * mvp[1][0] + y * mvp[1][1] + mvp[1][3] + mvp[3][1] + 1.,
                     );
+                    
+
+                    // arr[i] = (
+                    //     x * mvp[0][0] + y * mvp[0][1] + 0.0 * mvp[0][2] + 1.0 * mvp[0][3]
+                    //         - camera_position.x() * self.scale * SCROLL_FACTOR,
+                    //     x * mvp[1][0] + y * mvp[1][1] + 0.0 * mvp[1][2] + 1.0 * mvp[1][3]
+                    //         - camera_position.y() * self.scale * SCROLL_FACTOR,
+                    // );
                     // println!("{}, {}", arr[i].0, arr[i].1);
                     total_hex += 1;
                 });
@@ -237,6 +246,7 @@ impl<'p> Scene for BaseGame<'p> {
                     mvp: mvp,
                     total_hex: total_hex,
                     hex_positions: &hex_pos_buffer,
+                    u_scale: self.scale,
                     u_resolution: (self.window_dim.width, self.window_dim.height)
                 },
                 &Default::default(),
