@@ -10,7 +10,26 @@ uniform float u_scale;
 
 out vec4 color;
 
+const vec4 BROWN = vec4(1.0, 0.95, 0.85, 1.0);
+
+// Hexagon size
+const float HEX_SCALE = 0.9 * u_scale;
+
+// Not sure how I came up with this constant but without it the points from positions[64] dont match with the hex's
 const float SCALE_FACTOR = 0.5;
+
+// If 'r' falls into the equation, r ≤ sec(1/3 * arcsin(sin(3θ))), then the point is within the hexgon
+bool is_land(vec2 polar_pos) {
+    float radius = polar_pos.x;
+    float angle = polar_pos.y;
+    // Check if the point is within the hexagon equation
+    return radius <= HEX_SCALE / cos((1.0 / 3.0) * asin(sin(3.0 * angle)));
+}
+
+// (x, y) -> (r, θ)
+vec2 polar_coordinates_of(vec2 pos, vec2 st) {
+    return vec2(length(pos), atan(pos.y,  pos.x));
+}
 
 void main() {
     vec2 st = gl_FragCoord.xy / u_resolution.xy; // Normalize screen coordinates
@@ -18,19 +37,15 @@ void main() {
     // Initialize color to the default color
     color = vec4(st, 0.3, 1.0);
 
-    vec2 ab = vec2(0.2);
-
     // Iterate over the hex positions
     for (uint i = 0u; i < total_hex; i++) {
-        // Calculate the distance from the current fragment to the hex position
-
-        vec2 from_origin = st - positions[i] * SCALE_FACTOR;
-
+        // A normalized point that is (x, y) distance from (0, 0)
+        vec2 delta_origin = st - positions[i] * SCALE_FACTOR;
     
-        // Check if the fragment is inside the circle
-        if ((from_origin.x * from_origin.x) / (ab.x * ab.x) + (from_origin.y * from_origin.y) / (ab.y * ab.y) < 1 * u_scale) {
-            // If inside and closer than previous, update the color to red
-            color = vec4(positions[i], 0.0, 1.0);
+        // Check if the fragment is inside hexagon
+        if (is_land(polar_coordinates_of(delta_origin, st))) {
+            // On land
+            color = BROWN;
         }
     }
 }
