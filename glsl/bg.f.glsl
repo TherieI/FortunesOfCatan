@@ -43,9 +43,7 @@ void main() {
     for (uint i = 0u; i < total_hex; i++) {
         // A normalized point that is (x, y) distance from (0, 0)
         vec2 delta_origin = st - positions[i] * SCALE_FACTOR;
-
-
-    
+        
         // Check if the fragment is inside hexagon
         if (is_land(polar_coordinates_of(vec2(delta_origin.x * ASPECT_RATIO, delta_origin.y)))) {
             // On land
