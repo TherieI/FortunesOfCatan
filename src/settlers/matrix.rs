@@ -157,7 +157,7 @@ impl Mat4 {
 
     pub fn look_at(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
         // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
-        let z_axis  = (center - eye).normalize();
+        let z_axis = (center - eye).normalize();
         let x_axis = up.cross(&z_axis).normalize();
         let y_axis = z_axis.cross(&x_axis);
 

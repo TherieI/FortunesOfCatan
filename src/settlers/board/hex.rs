@@ -42,7 +42,7 @@ impl HexVertex {
             Some(Resource::Ore(n)) => 0u32 | 4 | (n as u32) << 8,
             Some(Resource::Wheat(n)) => 0u32 | 5 | (n as u32) << 8,
             Some(Resource::Sheep(n)) => 0u32 | 6 | (n as u32) << 8,
-            Some(Resource::Desert) => 0u32 | 1,
+            Some(Resource::Desert(_)) => 0u32 | 1,
             // Shouldn't ever be none
             None => 0,
         }
@@ -94,7 +94,7 @@ impl Hex {
         tiles.push(Resource::Ore(3));
         tiles.push(Resource::Wheat(4));
         tiles.push(Resource::Sheep(4));
-        tiles.push(Resource::Desert);
+        tiles.push(Resource::Desert(None));
 
         let mut rng = rand::thread_rng();
         let mut tile_value = 2;
@@ -105,9 +105,9 @@ impl Hex {
             let resource_index: usize = rng.gen_range(0..tiles.len());
             let resource = tiles[resource_index].clone();
             match &mut tiles[resource_index] {
-                Resource::Desert => {
+                Resource::Desert(_) => {
                     // Do something specific for Desert
-                    out.push(Resource::Desert);
+                    out.push(Resource::Desert(None));
                     tiles.remove(resource_index);
                 }
                 Resource::Wood(amount_left)

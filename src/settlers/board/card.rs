@@ -6,13 +6,13 @@ pub enum Resource {
     Ore(u8),
     Wheat(u8),
     Sheep(u8),
-    Desert,
+    Desert(Option<u8>),
 }
 
 impl Resource {
     pub fn clone_with_value(&self, val: u8) -> Self {
         match self {
-            Resource::Desert => Resource::Desert,
+            Resource::Desert(_) => Resource::Desert(None),
             Resource::Wood(_) => Resource::Wood(val),
             Resource::Brick(_) => Resource::Brick(val),
             Resource::Ore(_) => Resource::Ore(val),

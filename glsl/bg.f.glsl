@@ -79,7 +79,7 @@ void main() {
     if (!land) {
         float pct = distance(st, center);
         vec2 pos = vec2(st - center);
-        vec2 polar = polar_coordinates_of(vec2(pos.x * ASPECT_RATIO, pos.y / ASPECT_RATIO));
+        vec2 polar = polar_coordinates_of(vec2(pos.x * ASPECT_RATIO, pos.y));
         vec3 waves = LIGHT_BLUE.rgb * (vec3(1) - vec3(pct * sin(u_time / 20) / 2.0) / 2.0);
         color *= vec4(waves, 1.0);
     }
