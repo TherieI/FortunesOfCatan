@@ -237,7 +237,8 @@ impl<'p> Scene for BaseGame<'p> {
                     total_hex: total_hex,
                     hex_positions: &hex_pos_buffer,
                     u_scale: self.scale,
-                    u_resolution: (self.window_dim.width, self.window_dim.height)
+                    u_resolution: (self.window_dim.width, self.window_dim.height),
+                    u_time: self.time.elapsed().as_secs_f32(),
                 },
                 &Default::default(),
             )
