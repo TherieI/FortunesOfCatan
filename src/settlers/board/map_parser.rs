@@ -1,6 +1,9 @@
 use std::fs::read_to_string;
 
-use super::{card::Resource, hex::{Hex, MAX_HEX}};
+use super::{
+    card::Resource,
+    hex::{Hex, MAX_HEX},
+};
 
 #[derive(Debug)]
 pub enum ParseMapError {
@@ -13,6 +16,9 @@ pub enum ParseMapError {
     ChanceParseError,
     ChanceNotSuitable,
     HexChanceMismatch,
+    MapNotFound,
+    MapParseError,
+    MapSizeIncompatability,
 }
 
 pub fn parse_map(file: &'static str) -> Result<Vec<Vec<Hex>>, ParseMapError> {
@@ -61,38 +67,17 @@ pub fn parse_map(file: &'static str) -> Result<Vec<Vec<Hex>>, ParseMapError> {
                 // Resources should be in the format "RE:X"
                 return Err(ParseMapError::ResourceParseError);
             }
-            total_tiles += 1;
+            let count = res_split[1]
+                .parse::<u8>()
+                .map_err(|_| ParseMapError::ResourceParseError)?;
+            total_tiles += count as u32;
             match res_split[0] {
-                "WO" => Ok(Resource::Wood(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                )),
-                "BR" => Ok(Resource::Brick(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                )),
-                "OR" => Ok(Resource::Ore(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                )),
-                "WH" => Ok(Resource::Wheat(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                )),
-                "SH" => Ok(Resource::Sheep(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                )),
-                "DE" => Ok(Resource::Desert(Some(
-                    res_split[1]
-                        .parse()
-                        .map_err(|_| ParseMapError::ResourceParseError)?,
-                ))),
+                "WO" => Ok(Resource::Wood(count)),
+                "BR" => Ok(Resource::Brick(count)),
+                "OR" => Ok(Resource::Ore(count)),
+                "WH" => Ok(Resource::Wheat(count)),
+                "SH" => Ok(Resource::Sheep(count)),
+                "DE" => Ok(Resource::Desert(Some(count))),
                 _ => Err(ParseMapError::ResourceParseError),
             }
         })
@@ -106,25 +91,71 @@ pub fn parse_map(file: &'static str) -> Result<Vec<Vec<Hex>>, ParseMapError> {
         .get(chance_pos + 1)
         .ok_or(ParseMapError::ChanceNotFound)?;
     // Parse chances
-    let chances: Vec<u8> = chances.split(",").map(|chance| {
-        let c = chance.trim().parse::<u8>();
-        if let Some(val) = c.ok() {
-            if val < 2 || val > 12 || val == 7 {
-                Err(ParseMapError::ChanceNotSuitable)
+    let chances: Vec<u8> = chances
+        .split(",")
+        .map(|chance| {
+            let c = chance.trim().parse::<u8>();
+            if let Some(val) = c.ok() {
+                if val < 2 || val > 12 || val == 7 {
+                    Err(ParseMapError::ChanceNotSuitable)
+                } else {
+                    Ok(val)
+                }
             } else {
-                Ok(val)
+                Err(ParseMapError::ChanceParseError)
             }
-        } else {
-            Err(ParseMapError::ChanceParseError)
-        }
-    }).collect::<Result<_, _>>()?;
-    // Ensure total chances is the same as total tiles (excepting the desert tiles)
-    todo!();
-    if total_tiles != chances.len() as u32 || total_tiles > MAX_HEX {
+        })
+        .collect::<Result<_, _>>()?;
+    // Ensure total chances == total tiles (excepting the desert tiles)
+    let desert_tiles = resources
+        .iter()
+        .find(|res| {
+            if let Resource::Desert(_) = res {
+                true
+            } else {
+                false
+            }
+        })
+        .map(|res| {
+            if let Resource::Desert(val) = res {
+                val.unwrap_or(0)
+            } else {
+                0
+            }
+        })
+        .unwrap();
+    if total_tiles - desert_tiles as u32 != chances.len() as u32 || total_tiles > MAX_HEX {
         Err(ParseMapError::HexChanceMismatch)?
     }
+    // Find map
+    let map_pos = lines
+        .iter()
+        .position(|line| *line == "[MAP]")
+        .ok_or(ParseMapError::MapNotFound)?;
+    // Get dimensions
+    let map_dim: Vec<usize> = lines
+        .get(map_pos + 1)
+        .ok_or(ParseMapError::MapNotFound)?
+        .split("x")
+        .map(|dim| {
+            dim.parse::<usize>().map_err(|_| ParseMapError::MapParseError)
+        })
+        .collect::<Result<_, _>>()?;
+    if map_dim.len() != 2 {
+        Err(ParseMapError::MapParseError)?
+    }
+    let mut map = vec![vec![Hex::new(); map_dim[1]]; map_dim[0]];
+    for i in (map_pos + 2)..(map_pos + 2 + map_dim[0]) {
+        let row = lines.get(i).ok_or(ParseMapError::MapParseError)?;
+        for (j, c) in row.chars().enumerate() {
+            match c {
+                '0' => 
+                '1' =>
+                _ => Err(ParseMapError::MapParseError)?
+            }
+        }
+    }
 
-    let mut map = vec![vec![Hex::new(); map_dim.1]; map_dim.0];
     Ok(map)
 }
 
