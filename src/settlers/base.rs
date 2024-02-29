@@ -7,7 +7,7 @@ use crate::settlers::shader::ProgramManager;
 use crate::settlers::Board;
 use glium::backend::Facade;
 use glium::index::NoIndices;
-use glium::uniforms::UniformBuffer;
+use glium::uniforms::{SamplerBehavior, UniformBuffer};
 use glium::{Frame, IndexBuffer, Program, Surface, Texture2d, VertexBuffer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
@@ -91,6 +91,7 @@ impl<'p> BaseGame<'p> {
         let image_dimensions = image.dimensions();
         let image =
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        
         let texture = glium::texture::Texture2d::new(facade, image).unwrap();
 
         use crate::settings::WINDOW_DEFAULT_SIZE;
@@ -251,6 +252,24 @@ impl<'p> Scene for BaseGame<'p> {
         let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
         use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
 
+        use glium::LinearBlendingFactor::{SourceAlpha, OneMinusSourceAlpha};
+        use glium::BlendingFunction::Addition;
+
+        let params = glium::DrawParameters {
+            blend: glium::Blend {
+                color: Addition {
+                    source: SourceAlpha,
+                    destination: OneMinusSourceAlpha,
+                },
+                alpha: Addition {
+                    source: SourceAlpha,
+                    destination: OneMinusSourceAlpha,
+                },
+                constant_value: (0.0, 0.0, 0.0, 0.0),
+            },
+            ..Default::default()
+        };
+        
         frame
             .draw(
                 &vertex_buffer,
@@ -262,11 +281,12 @@ impl<'p> Scene for BaseGame<'p> {
                 &uniform! { u_mvp: mvp,
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
-                    tex_map: Sampler::new(&self.texture_map)
+                    tex_map: self.texture_map.sampled()
+                        .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
                         .magnify_filter(MagnifySamplerFilter::Nearest)
-                        .minify_filter(MinifySamplerFilter::NearestMipmapNearest)
+                        .minify_filter(MinifySamplerFilter::Nearest)
                 },
-                &Default::default(),
+                &params,
             )
             .unwrap();
         frame

@@ -17,6 +17,9 @@ out vec2 f_tex_coords;
 out flat uint hex_tex_id;
 out flat uint hex_value;
 
+// A constant to reduce the radius of the texture coordinates
+const float HEX_FIT = 1.3;
+
 void main() {
     // Hex metadata will remain consitant throughout the whole primitive
     hex_tex_id = gs_in[0].hex_tex;
@@ -34,7 +37,7 @@ void main() {
         vec2 pos = vec2(hex_radius * cos(theta), hex_radius * sin(theta));
         // Generate vertex for hexagon point
         gl_Position = u_mvp * (center + vec4(pos, 0.0, 0.0));
-        f_tex_coords = vec2(pos.x / 6.0 + 0.5, pos.y / 6.0 + 0.5);
+        f_tex_coords = vec2(HEX_FIT * pos.x / 6.0 + 0.5, HEX_FIT * pos.y / 6.0 + 0.5);
         EmitVertex();
         // Add a vertex for the center so triangle_strip wraps properly
         gl_Position = center_transformed;
