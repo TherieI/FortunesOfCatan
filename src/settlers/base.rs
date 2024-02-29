@@ -1,13 +1,18 @@
 use std::time::Instant;
 
+use crate::settlers::board::background::Vert2;
+use crate::settlers::board::hex;
 use crate::settlers::game::Scene;
-use crate::settlers::shader::create_program;
+use crate::settlers::shader::ProgramManager;
 use crate::settlers::Board;
 use glium::backend::Facade;
+use glium::index::NoIndices;
+use glium::uniforms::UniformBuffer;
 use glium::{Frame, IndexBuffer, Program, Surface, Texture2d, VertexBuffer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
+use super::board::background::quad;
 use super::camera::Camera;
 use super::game::DeltaTime;
 use super::matrix::Mat4;
@@ -55,12 +60,12 @@ impl Mouse {
     }
 }
 
-pub struct BaseGame {
+pub struct BaseGame<'p> {
     window_dim: PhysicalSize<u32>,
     // Keep track of the program time
     time: Instant,
     board: Board<5, 5>,
-    hex_shader: Program,
+    program_manager: ProgramManager<'p>,
     // Texture for the hex's
     texture_map: Texture2d,
     camera: Camera,
@@ -69,7 +74,7 @@ pub struct BaseGame {
     scale: f32,
 }
 
-impl BaseGame {
+impl<'p> BaseGame<'p> {
     pub fn new<F>(facade: &F) -> Self
     where
         F: Sized + Facade,
@@ -88,14 +93,27 @@ impl BaseGame {
         let texture = glium::texture::Texture2d::new(facade, image).unwrap();
 
         use crate::settings::WINDOW_DEFAULT_SIZE;
+        let mut program_manager = ProgramManager::new();
+        program_manager
+            .add_program(
+                "hex",
+                facade,
+                "glsl/hex.v.glsl",
+                "glsl/hex.f.glsl",
+                Some("glsl/hex.g.glsl"),
+            )
+            .expect("Hex shaders properly compiling");
+        program_manager
+            .add_program("bg", facade, "glsl/bg.v.glsl", "glsl/bg.f.glsl", None)
+            .expect("Background shaders properly compiling");
+
         Self {
             window_dim: WINDOW_DEFAULT_SIZE,
             time: Instant::now(),
             board,
-            hex_shader: create_program(facade, "glsl/hex.v.glsl", "glsl/hex.f.glsl", None)
-                .expect("Shaders should be found."),
+            program_manager,
             texture_map: texture,
-            camera: Camera::new(0., 0.),
+            camera: Camera::new(8., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
             scale: 0.13,
@@ -115,18 +133,19 @@ impl BaseGame {
             .scale_uniformly(self.scale);
         let view = self.camera.view_matrix();
         projection.multiply_by(&view).multiply_by(&transform);
+        // println!("{}", projection);
         projection.to_array()
     }
 }
 
-impl Scene for BaseGame {
+impl<'p> Scene for BaseGame<'p> {
     // Called on mouse move
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         let last_pos = self.mouse.last_pos();
         if self.mouse.left_pressed() {
             self.camera.move_to(|x, y, z| {
                 (
-                    x + (last_pos.x - position.x) as f32 * MOUSE_SPEED
+                    x - (last_pos.x - position.x) as f32 * MOUSE_SPEED
                         / self.window_dim.width as f32,
                     y - (last_pos.y - position.y) as f32 * MOUSE_SPEED
                         / self.window_dim.height as f32,
@@ -162,6 +181,7 @@ impl Scene for BaseGame {
     }
 
     fn window_size(&mut self, new_size: PhysicalSize<u32>) {
+        println!("Scale [{}, {}]", new_size.width, new_size.height);
         self.window_dim = new_size;
     }
 
@@ -175,24 +195,70 @@ impl Scene for BaseGame {
     where
         F: ?Sized + Facade,
     {
+        let mvp = self.mvp();
         // ============== Background ===============
-        
+        let mut total_hex: u32 = 0;
+        // The board must have less than 64 total hex tiles
+        let hex_positions: [(f32, f32); hex::MAX_HEX as usize] = {
+            let mut arr = [(0.0, 0.0); hex::MAX_HEX as usize];
+            self.board
+                .buffers()
+                .iter()
+                .map(|vert| vert.position())
+                .enumerate()
+                .for_each(|(i, (x, y))| {
+                    // Matrix transformation with camera position (Can't explain the +1 but its needed)
+                    arr[i] = (
+                        x * mvp[0][0] + y * mvp[0][1] + mvp[0][3] + mvp[3][0] + 1.,
+                        x * mvp[1][0] + y * mvp[1][1] + mvp[1][3] + mvp[3][1] + 1.,
+                    );
+                    total_hex += 1;
+                });
+            arr
+        };
+        let hex_pos_buffer = UniformBuffer::new(facade, hex_positions).unwrap();
+        let bg_vbo = VertexBuffer::new(facade, &quad::VERTICES).unwrap();
+        let bg_ebo = IndexBuffer::new(
+            facade,
+            glium::index::PrimitiveType::TrianglesList,
+            &quad::INDICES,
+        )
+        .unwrap();
+        frame
+            .draw(
+                &bg_vbo,
+                &bg_ebo,
+                &self
+                    .program_manager
+                    .program("bg")
+                    .expect("Background program exists"),
+                &uniform! {
+                    mvp: mvp,
+                    total_hex: total_hex,
+                    hex_positions: &hex_pos_buffer,
+                    u_scale: self.scale,
+                    u_resolution: (self.window_dim.width, self.window_dim.height),
+                    u_time: self.time.elapsed().as_secs_f32(),
+                },
+                &Default::default(),
+            )
+            .unwrap();
 
         // ============== Hex tiles ================
-        let (vertices, indices) = self.board.buffers();
+        let vertices = self.board.buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
-        let index_buffer =
-            IndexBuffer::new(facade, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
-        use glium::uniforms::{
-            MagnifySamplerFilter, MinifySamplerFilter, Sampler,
-        };
-        
+        let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
+        use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
+
         frame
             .draw(
                 &vertex_buffer,
                 &index_buffer,
-                &self.hex_shader,
-                &uniform! { u_mvp: self.mvp(),
+                &self
+                    .program_manager
+                    .program("hex")
+                    .expect("Hex program exists"),
+                &uniform! { u_mvp: mvp,
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
                     tex_map: Sampler::new(&self.texture_map)
@@ -203,5 +269,7 @@ impl Scene for BaseGame {
             )
             .unwrap();
         frame
+
+        // =============== Settlements / Cities / Roads ==================
     }
 }

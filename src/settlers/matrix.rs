@@ -10,6 +10,18 @@ impl Vec3 {
         Vec3(x, y, z)
     }
 
+    pub fn x(&self) -> f32 {
+        self.0
+    }
+
+    pub fn y(&self) -> f32 {
+        self.1
+    }
+
+    pub fn z(&self) -> f32 {
+        self.2
+    }
+
     pub fn magnitude(&self) -> f32 {
         (self.0.powi(2) + self.1.powi(2) + self.2.powi(2)).sqrt()
     }
@@ -144,25 +156,24 @@ impl Mat4 {
     }
 
     pub fn look_at(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
-        // https://stackoverflow.com/questions/19740463/lookat-function-im-going-crazy
-        let f = (center - eye).normalize();
-        let u = up.normalize();
-        let s = f.cross(&u).normalize();
-        let u = s.cross(&f);
+        // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
+        let z_axis = (center - eye).normalize();
+        let x_axis = up.cross(&z_axis).normalize();
+        let y_axis = z_axis.cross(&x_axis);
 
         let mut view = Self::new();
-        view[0][0] = s.0;
-        view[1][0] = s.1;
-        view[2][0] = s.2;
-        view[0][1] = u.0;
-        view[1][1] = u.1;
-        view[2][1] = u.2;
-        view[0][2] = -f.0;
-        view[1][2] = -f.1;
-        view[2][2] = -f.2;
-        view[3][0] = -s.dot(&eye);
-        view[3][1] = -u.dot(&eye);
-        view[3][2] = f.dot(&eye);
+        view[0][0] = x_axis.0;
+        view[1][0] = x_axis.1;
+        view[2][0] = x_axis.2;
+        view[0][1] = y_axis.0;
+        view[1][1] = y_axis.1;
+        view[2][1] = y_axis.2;
+        view[0][2] = z_axis.0;
+        view[1][2] = z_axis.1;
+        view[2][2] = z_axis.2;
+        view[3][0] = -x_axis.dot(&eye);
+        view[3][1] = -y_axis.dot(&eye);
+        view[3][2] = -z_axis.dot(&eye);
         view[3][3] = 1.;
         view
     }

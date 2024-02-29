@@ -1,0 +1,27 @@
+__FOCM__
+
+# Comments start with a '#'
+# Data must procede the line directly after [TAG]
+
+# Expansions: DEFAULT, SEAFARERS, KINGDOM
+[EXPANSION]
+DEFAULT
+
+# Number of tiles on the board
+[RESOURCES]
+OR:3, BR:3, WH:4, SH:4, WO:4, DE:1
+
+# len(chance) MUST equal total tiles on the board
+# Values must be (2..=12) & not 7
+[CHANCES]
+2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12
+
+# Odd rows are drawn with an offset to the right
+# Tiles are '1' empty / ocean are '0'
+[MAP]
+5x5
+01110
+11110
+11111
+11110
+01110
