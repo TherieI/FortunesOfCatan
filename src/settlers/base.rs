@@ -83,7 +83,7 @@ impl<'p> BaseGame<'p> {
         board.randomize();
         // Generate texture for our hex's
         let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../assets/hex/resource_tilemap_v1.png")),
+            std::io::Cursor::new(&include_bytes!("../../assets/hex/hex_tilemap.png")),
             image::ImageFormat::Png,
         )
         .unwrap()

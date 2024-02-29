@@ -232,8 +232,9 @@ impl Board {
 
     pub fn buffers(&self) -> Vec<HexVertex> {
         let mut vertices = Vec::new();
-        for j in 0..self.tiles.len() {
-            for i in 0..self.tiles[0].len() {
+        let (width, height) = (self.tiles[0].len(), self.tiles.len());
+        for j in 0..height {
+            for i in 0..width {
                 if let Some(hex) = self.tiles[j][i] {
                     // Push a single point, the center of the hexagon, to the buffer
                     // The gpu will transform this point into a hexagon in the geometry shader
