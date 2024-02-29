@@ -1,12 +1,8 @@
-use crate::settlers::board::{
-    card::{Gamble, Occupant, Resource},
-    hex,
-};
+use crate::settlers::board::card::{Gamble, Occupant, Resource};
 use rand::{seq::SliceRandom, Rng};
 
 use std::fmt::{Display, Formatter};
 
-const BOARD_OFFSET: (f32, f32) = (5., 4.22);
 /// Maximum number of hex's on the board
 pub const MAX_HEX: u32 = 64;
 
@@ -61,21 +57,24 @@ impl Display for HexVertex {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Hex {
-    // If resource is None, then the tile is an ocean
-    resource: Option<Resource>,
+    resource: Resource,
     occupants: Option<Occupant>,
 }
 
 impl Hex {
     pub fn new() -> Self {
         Hex {
-            resource: None,
+            resource: Resource::Desert(None),
             occupants: None,
         }
     }
 
+    pub fn resource(&self) -> Resource {
+        self.resource
+    }
+
     pub fn set_resource(&mut self, resource: Resource) -> &mut Self {
-        self.resource = Some(resource);
+        self.resource = resource;
         self
     }
 
@@ -136,85 +135,5 @@ impl Hex {
         }
         out.shuffle(&mut rng);
         out
-    }
-}
-
-#[derive(Debug)]
-pub struct Board<const I: usize, const J: usize> {
-    tiles: [[Hex; I]; J],
-}
-
-impl<const I: usize, const J: usize> Board<I, J> {
-    pub fn new() -> Self {
-        Board {
-            tiles: [[Hex::new(); I]; J],
-        }
-    }
-
-    pub fn random_default() -> Self {
-        if I != 5 || I != J {
-            panic!("Board must be 5x5");
-        }
-        let mut tiles = [[Hex::new(); I]; J];
-        let mut chances = Hex::random_set();
-        for j in 0..J {
-            for i in 1..I - 1 {
-                tiles[j][i].set_resource(chances.pop().unwrap());
-            }
-        }
-        tiles[1][0].set_resource(chances.pop().unwrap());
-        tiles[2][0].set_resource(chances.pop().unwrap());
-        tiles[3][0].set_resource(chances.pop().unwrap());
-        tiles[2][4].set_resource(chances.pop().unwrap());
-
-        Board { tiles }
-    }
-
-    pub fn buffers(&self) -> Vec<HexVertex> {
-        let mut vertices = Vec::new();
-        for j in 0..J {
-            for i in 0..I {
-                let resource = self.tiles[j][i].resource;
-                if let Some(res) = resource {
-                    // Push a single point, the center of the hexagon, to the buffer
-                    // The gpu will transform this point into a hexagon in the geometry shader
-                    let offset = if j % 2 == 1 { BOARD_OFFSET.0 / 2. } else { 0. };
-                    let mut vertex = HexVertex::new(
-                        BOARD_OFFSET.0 * i as f32 + offset,
-                        BOARD_OFFSET.1 * j as f32,
-                    );
-                    vertex.add_meta(Some(res));
-                    vertices.push(vertex);
-                } else {
-                    // Water
-                }
-            }
-        }
-        vertices
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn default_random_generation() {
-        let tiles = Hex::random_set();
-        assert_eq!(tiles.len(), 19);
-        for res in tiles.iter() {
-            println!("{:?}", res);
-        }
-    }
-
-    #[test]
-    fn board5x5() {
-        let board: Board<5, 5> = Board::random_default();
-        println!("{:?}", board);
-    }
-
-    #[test]
-    fn buffers() {
-        let board: Board<5, 5> = Board::random_default();
-        let buffers = board.buffers();
     }
 }

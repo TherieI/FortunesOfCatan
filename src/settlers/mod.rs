@@ -1,6 +1,6 @@
 pub mod base;
 pub mod board;
-use board::hex::Board;
+use board::map::Board;
 pub mod camera;
 pub mod game;
 pub mod matrix;

@@ -64,7 +64,7 @@ pub struct BaseGame<'p> {
     window_dim: PhysicalSize<u32>,
     // Keep track of the program time
     time: Instant,
-    board: Board<5, 5>,
+    board: Board,
     program_manager: ProgramManager<'p>,
     // Texture for the hex's
     texture_map: Texture2d,
@@ -79,7 +79,8 @@ impl<'p> BaseGame<'p> {
     where
         F: Sized + Facade,
     {
-        let board: Board<5, 5> = Board::random_default();
+        let mut board: Board = Board::from_file("src/settlers/board/maps/custom.focm").unwrap();
+        board.randomize();
         // Generate texture for our hex's
         let image = image::load(
             std::io::Cursor::new(&include_bytes!("../../assets/hex/resource_tilemap_v1.png")),
@@ -262,8 +263,8 @@ impl<'p> Scene for BaseGame<'p> {
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
                     tex_map: Sampler::new(&self.texture_map)
-                        .minify_filter(MinifySamplerFilter::Nearest)
                         .magnify_filter(MagnifySamplerFilter::Nearest)
+                        .minify_filter(MinifySamplerFilter::NearestMipmapNearest)
                 },
                 &Default::default(),
             )
