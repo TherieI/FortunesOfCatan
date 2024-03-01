@@ -1,14 +1,12 @@
 use std::time::Instant;
-
-use crate::settlers::board::background::Vert2;
 use crate::settlers::board::hex;
 use crate::settlers::game::Scene;
 use crate::settlers::shader::ProgramManager;
 use crate::settlers::Board;
 use glium::backend::Facade;
 use glium::index::NoIndices;
-use glium::uniforms::{SamplerBehavior, UniformBuffer};
-use glium::{Frame, IndexBuffer, Program, Surface, Texture2d, VertexBuffer};
+use glium::uniforms::UniformBuffer;
+use glium::{Frame, IndexBuffer, Surface, Texture2d, VertexBuffer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 

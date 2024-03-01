@@ -5,6 +5,7 @@ use std::ops::{Index, IndexMut};
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3(f32, f32, f32);
 
+#[allow(dead_code)]
 impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
         Vec3(x, y, z)
@@ -113,6 +114,7 @@ impl IndexMut<(usize, usize)> for Mat4 {
     }
 }
 
+#[allow(dead_code)]
 impl Mat4 {
     /// Returns an empty 4x4 Matrix
     pub fn new() -> Self {

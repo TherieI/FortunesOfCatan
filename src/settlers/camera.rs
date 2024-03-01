@@ -26,8 +26,4 @@ impl Camera {
         self.pos = new_pos(pos.0, pos.1, pos.2).into();
         // println!("Updated camera position: {:?}", self.pos);
     }
-
-    pub fn position(&self) -> &Vec3 {
-        &self.pos
-    }
 }

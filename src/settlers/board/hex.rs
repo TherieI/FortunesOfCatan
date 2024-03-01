@@ -1,6 +1,4 @@
-use crate::settlers::board::card::{Gamble, Occupant, Resource};
-use rand::{seq::SliceRandom, Rng};
-
+use crate::settlers::board::card::{Occupant, Resource};
 use std::fmt::{Display, Formatter};
 
 /// Maximum number of hex's on the board
@@ -55,12 +53,14 @@ impl Display for HexVertex {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct Hex {
     resource: Resource,
     occupants: Option<Occupant>,
 }
 
+#[allow(dead_code)]
 impl Hex {
     pub fn new() -> Self {
         Hex {
@@ -81,59 +81,5 @@ impl Hex {
     pub fn rob(&mut self) -> &mut Self {
         self.occupants = Some(Occupant::Robber);
         self
-    }
-
-    // Generate a set of tiles for the default 5x5 board
-    pub fn random_set() -> Vec<Resource> {
-        let mut out: Vec<Resource> = Vec::with_capacity(20);
-        // Number of resource tiles available
-        let mut tiles: Vec<Resource> = Vec::with_capacity(7);
-        tiles.push(Resource::Wood(4));
-        tiles.push(Resource::Brick(3));
-        tiles.push(Resource::Ore(3));
-        tiles.push(Resource::Wheat(4));
-        tiles.push(Resource::Sheep(4));
-        tiles.push(Resource::Desert(None));
-
-        let mut rng = rand::thread_rng();
-        let mut tile_value = 2;
-        let mut inc = 1;
-
-        while tiles.len() > 0 {
-            // Get random tile
-            let resource_index: usize = rng.gen_range(0..tiles.len());
-            let resource = tiles[resource_index].clone();
-            match &mut tiles[resource_index] {
-                Resource::Desert(_) => {
-                    // Do something specific for Desert
-                    out.push(Resource::Desert(None));
-                    tiles.remove(resource_index);
-                }
-                Resource::Wood(amount_left)
-                | Resource::Brick(amount_left)
-                | Resource::Ore(amount_left)
-                | Resource::Wheat(amount_left)
-                | Resource::Sheep(amount_left) => {
-                    // Add Tile and random number to output
-                    if tile_value == 7 {
-                        // Skip 7's
-                        tile_value += 1;
-                    }
-                    out.push(resource.clone_with_value(tile_value));
-                    inc += 1;
-                    if inc > 1 {
-                        tile_value += 1;
-                        inc = 0;
-                    }
-                    // Deplete tiles
-                    *amount_left -= 1;
-                    if *amount_left == 0 {
-                        tiles.remove(resource_index);
-                    }
-                }
-            };
-        }
-        out.shuffle(&mut rng);
-        out
     }
 }

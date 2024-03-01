@@ -45,12 +45,14 @@ pub trait Scene {
         F: ?Sized + Facade;
 }
 
+#[allow(dead_code)]
 pub enum Expansion {
     Base,
     Seafarers,
     CitiesAndKnights,
 }
 
+#[allow(dead_code)]
 pub struct Settlers {
     scene: Expansion,
 }
@@ -62,7 +64,7 @@ impl Settlers {
         }
     }
 
-    pub fn run(&mut self, imgui_debug: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&mut self, _imgui_debug: bool) -> Result<(), Box<dyn std::error::Error>> {
         // =======================================
         let event_loop = winit::event_loop::EventLoopBuilder::new()
             .build()

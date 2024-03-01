@@ -158,7 +158,7 @@ impl Board {
         }
         let mut map: Vec<Vec<Option<Hex>>> = vec![vec![None; map_dim[1]]; map_dim[0]];
         for i in 0..map_dim[0] {
-            let row = lines.get(map_pos + 2 + i).ok_or(ParseMapError::MapParseError)?;
+            let row = lines.get(map_pos + 2 + i).ok_or(ParseMapError::MapSizeIncompatability)?;
             for (j, c) in row.chars().enumerate() {
                 match c {
                     '0' => map[i][j] = None,
@@ -256,14 +256,10 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
     #[test]
     fn default_random_generation() {
-        let tiles = Hex::random_set();
-        assert_eq!(tiles.len(), 19);
-        for res in tiles.iter() {
-            println!("{:?}", res);
-        }
+
     }
 
     #[test]

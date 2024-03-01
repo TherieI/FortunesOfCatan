@@ -23,6 +23,7 @@ impl Resource {
 }
 
 // Development cards (gambling cards)
+#[allow(dead_code)]
 pub enum Gamble {
     Knight(u8),
     RoadBuilder(u8),
@@ -33,6 +34,7 @@ pub enum Gamble {
 
 // Entities that can occupy a tile on the board, e.g the robber or merchant
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum Occupant {
     Robber,
     Merchant,
@@ -54,7 +56,6 @@ mod tests {
             Res::Brick(val) => {
                 *val -= 1;
             }
-            _ => (),
         }
     }
 

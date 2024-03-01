@@ -14,20 +14,18 @@ uniform uvec2 u_resolution;
 uniform float u_scale;
 uniform float u_time;
 
-// Pixel Dimensions
-const float pixel_scale = 12.0;
-const int pixel_x = int(5 * pixel_scale * u_scale);
-const int pixel_y = int(4 * pixel_scale * u_scale);
-
 // COLORS
 const vec4 TAN = vec4(1.0, 0.95, 0.85, 1.0);
 const vec4 LIGHT_BLUE = vec4(0.059, 0.898, 0.91, 1.0);
-
 // Hexagon size
 const float HEX_SCALE = 0.9 * u_scale;
 // Not sure how I came up with this constant but without it the points from positions[64] dont match with the hex's
 const float SCALE_FACTOR = 0.5;
 const float ASPECT_RATIO = float(u_resolution.x) / float(u_resolution.y);
+// Pixel Dimensions
+const float pixel_scale = 42.0;
+const int pixel_x = int(pixel_scale * u_scale);
+const int pixel_y = int(pixel_scale * u_scale);
 
 // Random 1D value from (-1, 1)
 float rand1d(float value) {
@@ -92,6 +90,4 @@ void main() {
         vec3 waves = LIGHT_BLUE.rgb * (vec3(1) - vec3(pct * sin(u_time / 20) / 2.0) / 2.0);
         color *= vec4(waves, 1.0);
     }
-
-    // pixelate(color, center, st, 100);
 }
