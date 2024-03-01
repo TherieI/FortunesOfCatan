@@ -107,13 +107,13 @@ impl<'p, 's> BaseGame<'p, 's> {
             .add_program(
                 "hex",
                 facade,
-                "glsl/hex.v.glsl",
-                "glsl/hex.f.glsl",
-                Some("glsl/hex.g.glsl"),
+                "glsl/hex/hex.v.glsl",
+                "glsl/hex/hex.f.glsl",
+                Some("glsl/hex/hex.g.glsl"),
             )
             .expect("Hex shaders properly compiling");
         program_manager
-            .add_program("bg", facade, "glsl/bg.v.glsl", "glsl/bg.f.glsl", None)
+            .add_program("bg", facade, "glsl/bg/bg.v.glsl", "glsl/bg/bg.f.glsl", None)
             .expect("Background shaders properly compiling");
 
         Self {

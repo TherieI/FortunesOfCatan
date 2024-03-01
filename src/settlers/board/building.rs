@@ -6,10 +6,19 @@ use super::{card::Resource, hex::Hex};
 // position can be found by average of other positions
 // Potentially increase the size of the board so every position has three surrounding tiles
 
+pub const SETTLEMENT_PATH: &'static str = "../../../assets/structures/settlement.png";
+
 #[derive(Clone, Copy)]
 pub struct BuildingVertex {
     pos: [f32; 2],
-    meta: u32,
+    /// First 4 bits: Type of structure
+    /// 0 - ROAD, 
+    /// 1 - SETTLEMENT, 
+    /// 2 - CITY, 
+    /// Next 8 bits: Color ID (Player)
+    /// ...
+    /// Next 4 bits: Road info
+    meta: u16,
 }
 implement_vertex!(BuildingVertex, pos, meta);
 
@@ -21,7 +30,22 @@ impl BuildingVertex {
         }
     }
 
-    // Todo: Add metadata implementation (road direction, structure color)
+    pub fn set_structure(&mut self, structure: &Structure) {
+        let id = match structure {
+            Structure::Road { .. } => 0u16,
+            Structure::Settlement { .. } => 1,
+            Structure::City { .. } => 2,
+        };
+        // Clear first 4 bits then add id
+        self.meta = (self.meta & 0b1111111111110000) | id;
+    }
+
+    pub fn set_color(&mut self, color_id: u8) {
+        let mut data = self.meta;
+        // Clearing old color, then inserting new color
+        data = ((data >> 4) & 0b111100000000) | color_id as u16;
+        self.meta = (data << 4) | (self.meta & 0b1111);
+    }
 }
 
 /// Represents a catan structure.
@@ -76,5 +100,29 @@ impl<'h> Structure<'h> {
             }
         }
         resources
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn vertex_color() {
+        let mut v = BuildingVertex::new(0., 0.);
+        v.set_color(3);
+        assert_eq!(v.meta, 48);
+    }
+    #[test]
+    fn vertex_structure() {
+        let mut v = BuildingVertex::new(0., 0.);
+        v.set_structure(&Structure::City { position: Vec3::new(0., 0., 0.), hexes: [None; 3] });
+        assert_eq!(v.meta, 2);
+    }
+    #[test]
+    fn vertex_all_meta() {
+        let mut v = BuildingVertex::new(0., 0.);
+        v.set_color(5);
+        v.set_structure(&Structure::City { position: Vec3::new(0., 0., 0.), hexes: [None; 3] });
+        assert_eq!(82, v.meta);
     }
 }

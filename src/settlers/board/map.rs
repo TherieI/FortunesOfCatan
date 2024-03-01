@@ -270,7 +270,14 @@ impl<'s> Board<'s> {
         for structure in self.buildings.iter() {
             match structure {
                 Structure::Road { position } => vertices.push(BuildingVertex::new(position.x(), position.y())),
-                _ => ()
+                Structure::Settlement { position, .. } => {
+                    let settle = BuildingVertex::new(position.x(), position.y());
+                    vertices.push(settle);
+                },
+                Structure::City { position, .. } => {
+                    let city = BuildingVertex::new(position.x(), position.y());
+                    vertices.push(city);
+                }
             }
         }
         vertices
