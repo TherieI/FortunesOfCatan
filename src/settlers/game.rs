@@ -1,4 +1,4 @@
-use crate::settlers::base::BaseGame;
+use crate::settlers::expansions::base::BaseGame;
 use glium::backend::Facade;
 use glium::{Frame, Surface};
 use std::time::Instant;

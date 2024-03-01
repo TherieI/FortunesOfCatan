@@ -1,6 +1,5 @@
 use super::{
-    card::Resource,
-    hex::{Hex, HexVertex, MAX_HEX},
+    building::BuildingVertex, card::Resource, hex::{Hex, HexVertex, MAX_HEX}
 };
 use crate::rand::Rng;
 use rand::seq::SliceRandom;
@@ -156,18 +155,27 @@ impl Board {
         if map_dim.len() != 2 {
             Err(ParseMapError::MapParseError)?
         }
-        let mut map: Vec<Vec<Option<Hex>>> = vec![vec![None; map_dim[1]]; map_dim[0]];
-        for i in 0..map_dim[0] {
-            let row = lines.get(map_pos + 2 + i).ok_or(ParseMapError::MapSizeIncompatability)?;
+        // We add 1 to create a border around the map
+        let mut actual_tiles = 0;
+        let mut map: Vec<Vec<Option<Hex>>> = vec![vec![None; map_dim[1] + 2]; map_dim[0] + 2];
+        for i in 1..(map_dim[0] + 1) {
+            let row = lines
+                .get(map_pos + 2 + i - 1)
+                .ok_or(ParseMapError::MapSizeIncompatability)?;
             for (j, c) in row.chars().enumerate() {
                 match c {
-                    '0' => map[i][j] = None,
-                    '1' => map[i][j] = Some(Hex::new()),
+                    '0' => map[i][j + 1] = None,
+                    '1' => {
+                        map[i][j + 1] = Some(Hex::new());
+                        actual_tiles += 1;
+                    }
                     _ => Err(ParseMapError::MapParseError)?,
                 }
             }
         }
-
+        if actual_tiles != total_tiles {
+            Err(ParseMapError::MapSizeIncompatability)?
+        }
         Ok(Self {
             tiles: map,
             distribution: resources,
@@ -228,9 +236,10 @@ impl Board {
                 }
             }
         }
+        // println!("{:?}", self.tiles);
     }
 
-    pub fn buffers(&self) -> Vec<HexVertex> {
+    pub fn hex_buffers(&self) -> Vec<HexVertex> {
         let mut vertices = Vec::new();
         let (width, height) = (self.tiles[0].len(), self.tiles.len());
         for j in 0..height {
@@ -238,7 +247,7 @@ impl Board {
                 if let Some(hex) = self.tiles[j][i] {
                     // Push a single point, the center of the hexagon, to the buffer
                     // The gpu will transform this point into a hexagon in the geometry shader
-                    let offset = if j % 2 == 1 { BOARD_OFFSET.0 / 2. } else { 0. };
+                    let offset = if j % 2 == 0 { BOARD_OFFSET.0 / 2. } else { 0. };
                     let mut vertex = HexVertex::new(
                         BOARD_OFFSET.0 * i as f32 + offset,
                         BOARD_OFFSET.1 * j as f32,
@@ -252,15 +261,18 @@ impl Board {
         }
         vertices
     }
+
+    pub fn building_buffers(&self) -> Vec<BuildingVertex> {
+        let mut vertices = Vec::new();
+        vertices
+    }
 }
 
 #[cfg(test)]
 mod tests {
     // use super::*;
     #[test]
-    fn default_random_generation() {
-
-    }
+    fn default_random_generation() {}
 
     #[test]
     fn check_output() {

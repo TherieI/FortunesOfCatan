@@ -82,4 +82,8 @@ impl Hex {
         self.occupants = Some(Occupant::Robber);
         self
     }
+
+    pub fn is_robbed(&self) -> bool {
+        self.occupants.is_some()
+    }
 }

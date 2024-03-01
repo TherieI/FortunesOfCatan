@@ -20,7 +20,18 @@ impl Resource {
             Resource::Sheep(_) => Resource::Sheep(val),
         }
     }
-}
+
+    pub fn chance(&self) -> u8 {
+        match self {
+            Resource::Desert(c) => 0,
+            Resource::Wood(c) => *c,
+            Resource::Brick(c) => *c,
+            Resource::Ore(c) => *c,
+            Resource::Wheat(c) => *c,
+            Resource::Sheep(c) => *c,
+        }
+    }
+ }
 
 // Development cards (gambling cards)
 #[allow(dead_code)]

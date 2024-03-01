@@ -1,19 +1,17 @@
-use std::time::Instant;
+use crate::settlers::board::background::quad;
 use crate::settlers::board::hex;
-use crate::settlers::game::Scene;
+use crate::settlers::camera::Camera;
+use crate::settlers::game::{DeltaTime, Scene};
+use crate::settlers::matrix::Mat4;
 use crate::settlers::shader::ProgramManager;
 use crate::settlers::Board;
 use glium::backend::Facade;
 use glium::index::NoIndices;
 use glium::uniforms::UniformBuffer;
 use glium::{Frame, IndexBuffer, Surface, Texture2d, VertexBuffer};
+use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
-
-use super::board::background::quad;
-use super::camera::Camera;
-use super::game::DeltaTime;
-use super::matrix::Mat4;
 
 const MOUSE_SPEED: f32 = 10.;
 
@@ -82,7 +80,7 @@ impl<'p> BaseGame<'p> {
         board.randomize();
         // Generate texture for hex tiles
         let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../assets/hex/hex_tilemap.png")),
+            std::io::Cursor::new(&include_bytes!("../../../assets/hex/hex_tilemap.png")),
             image::ImageFormat::Png,
         )
         .unwrap()
@@ -93,7 +91,7 @@ impl<'p> BaseGame<'p> {
         let hex_texture = glium::texture::Texture2d::new(facade, image).unwrap();
         // Generate texture for chances
         let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../assets/hex/chances_tilemap.png")),
+            std::io::Cursor::new(&include_bytes!("../../../assets/hex/chances_tilemap.png")),
             image::ImageFormat::Png,
         )
         .unwrap()
@@ -214,7 +212,7 @@ impl<'p> Scene for BaseGame<'p> {
         let hex_positions: [(f32, f32); hex::MAX_HEX as usize] = {
             let mut arr = [(0.0, 0.0); hex::MAX_HEX as usize];
             self.board
-                .buffers()
+                .hex_buffers()
                 .iter()
                 .map(|vert| vert.position())
                 .enumerate()
@@ -257,13 +255,13 @@ impl<'p> Scene for BaseGame<'p> {
             .unwrap();
 
         // ============== Hex tiles ================
-        let vertices = self.board.buffers();
+        let vertices = self.board.hex_buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
         use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter};
 
-        use glium::LinearBlendingFactor::{SourceAlpha, OneMinusSourceAlpha};
         use glium::BlendingFunction::Addition;
+        use glium::LinearBlendingFactor::{OneMinusSourceAlpha, SourceAlpha};
 
         let params = glium::DrawParameters {
             blend: glium::Blend {
@@ -279,7 +277,7 @@ impl<'p> Scene for BaseGame<'p> {
             },
             ..Default::default()
         };
-        
+
         frame
             .draw(
                 &vertex_buffer,
