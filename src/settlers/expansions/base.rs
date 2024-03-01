@@ -56,11 +56,11 @@ impl Mouse {
     }
 }
 
-pub struct BaseGame<'p> {
+pub struct BaseGame<'p, 's> {
     window_dim: PhysicalSize<u32>,
     // Keep track of the program time
     time: Instant,
-    board: Board,
+    board: Board<'s>,
     program_manager: ProgramManager<'p>,
     // Texture for the hex's
     texture_map_hex: Texture2d,
@@ -71,7 +71,7 @@ pub struct BaseGame<'p> {
     scale: f32,
 }
 
-impl<'p> BaseGame<'p> {
+impl<'p, 's> BaseGame<'p, 's> {
     pub fn new<F>(facade: &F) -> Self
     where
         F: Sized + Facade,
@@ -148,7 +148,7 @@ impl<'p> BaseGame<'p> {
     }
 }
 
-impl<'p> Scene for BaseGame<'p> {
+impl<'p, 's> Scene for BaseGame<'p, 's> {
     // Called on mouse move
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         let last_pos = self.mouse.last_pos();

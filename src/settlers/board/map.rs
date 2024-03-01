@@ -1,5 +1,5 @@
 use super::{
-    building::BuildingVertex, card::Resource, hex::{Hex, HexVertex, MAX_HEX}
+    building::{BuildingVertex, Structure}, card::Resource, hex::{Hex, HexVertex, MAX_HEX}
 };
 use crate::rand::Rng;
 use rand::seq::SliceRandom;
@@ -24,14 +24,16 @@ pub enum ParseMapError {
 const BOARD_OFFSET: (f32, f32) = (5., 4.22);
 
 #[derive(Debug)]
-pub struct Board {
+pub struct Board<'s> {
+    // All structures, including road, settlement, city...
+    buildings: Vec<Structure<'s>>,
     tiles: Vec<Vec<Option<Hex>>>,
-    // Attributes of Hex, used to randomize the map
+    // Attributes of Hex tiles, used to randomize the map
     distribution: Vec<Resource>,
     chances: Vec<u8>,
 }
 
-impl Board {
+impl<'s> Board<'s> {
     pub fn from_file(file: &'static str) -> Result<Self, ParseMapError> {
         // Filter the comments and newlines from the file
         let content = read_to_string(file).map_err(|_| ParseMapError::FileNotFound)?;
@@ -177,6 +179,7 @@ impl Board {
             Err(ParseMapError::MapSizeIncompatability)?
         }
         Ok(Self {
+            buildings: Vec::new(),
             tiles: map,
             distribution: resources,
             chances,
@@ -263,7 +266,13 @@ impl Board {
     }
 
     pub fn building_buffers(&self) -> Vec<BuildingVertex> {
-        let mut vertices = Vec::new();
+        let mut vertices: Vec<BuildingVertex> = Vec::new();
+        for structure in self.buildings.iter() {
+            match structure {
+                Structure::Road { position } => vertices.push(BuildingVertex::new(position.x(), position.y())),
+                _ => ()
+            }
+        }
         vertices
     }
 }

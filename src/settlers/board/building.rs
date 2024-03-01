@@ -9,11 +9,24 @@ use super::{card::Resource, hex::Hex};
 #[derive(Clone, Copy)]
 pub struct BuildingVertex {
     pos: [f32; 2],
+    meta: u32,
 }
-implement_vertex!(BuildingVertex, pos);
+implement_vertex!(BuildingVertex, pos, meta);
+
+impl BuildingVertex {
+    pub fn new(x: f32, y: f32) -> BuildingVertex{
+        BuildingVertex {
+            pos: [x, y],
+            meta: 0
+        }
+    }
+
+    // Todo: Add metadata implementation (road direction, structure color)
+}
 
 /// Represents a catan structure.
 /// Stores the position of the structure relative to the position of the tiles in Map::tiles.
+#[derive(Debug)]
 pub enum Structure<'h> {
     Road {
         position: Vec3,
