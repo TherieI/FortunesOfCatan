@@ -67,7 +67,8 @@ pub struct BaseGame<'p> {
     board: Board,
     program_manager: ProgramManager<'p>,
     // Texture for the hex's
-    texture_map: Texture2d,
+    texture_map_hex: Texture2d,
+    texture_map_chances: Texture2d,
     camera: Camera,
     delta_time: DeltaTime,
     mouse: Mouse,
@@ -79,9 +80,9 @@ impl<'p> BaseGame<'p> {
     where
         F: Sized + Facade,
     {
-        let mut board: Board = Board::from_file("src/settlers/board/maps/custom.focm").unwrap();
+        let mut board: Board = Board::from_file("src/settlers/board/maps/chungus.focm").unwrap();
         board.randomize();
-        // Generate texture for our hex's
+        // Generate texture for hex tiles
         let image = image::load(
             std::io::Cursor::new(&include_bytes!("../../assets/hex/hex_tilemap.png")),
             image::ImageFormat::Png,
@@ -91,9 +92,19 @@ impl<'p> BaseGame<'p> {
         let image_dimensions = image.dimensions();
         let image =
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-        
-        let texture = glium::texture::Texture2d::new(facade, image).unwrap();
-
+        let hex_texture = glium::texture::Texture2d::new(facade, image).unwrap();
+        // Generate texture for chances
+        let image = image::load(
+            std::io::Cursor::new(&include_bytes!("../../assets/hex/chances_tilemap.png")),
+            image::ImageFormat::Png,
+        )
+        .unwrap()
+        .to_rgba8();
+        let image_dimensions = image.dimensions();
+        let image =
+            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let chances_texture = glium::texture::Texture2d::new(facade, image).unwrap();
+        // Create shader program
         use crate::settings::WINDOW_DEFAULT_SIZE;
         let mut program_manager = ProgramManager::new();
         program_manager
@@ -114,7 +125,8 @@ impl<'p> BaseGame<'p> {
             time: Instant::now(),
             board,
             program_manager,
-            texture_map: texture,
+            texture_map_hex: hex_texture,
+            texture_map_chances: chances_texture,
             camera: Camera::new(8., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
@@ -250,7 +262,7 @@ impl<'p> Scene for BaseGame<'p> {
         let vertices = self.board.buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
-        use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
+        use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter};
 
         use glium::LinearBlendingFactor::{SourceAlpha, OneMinusSourceAlpha};
         use glium::BlendingFunction::Addition;
@@ -281,10 +293,14 @@ impl<'p> Scene for BaseGame<'p> {
                 &uniform! { u_mvp: mvp,
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
-                    tex_map: self.texture_map.sampled()
+                    texture_map_hex: self.texture_map_hex.sampled()
                         .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
                         .magnify_filter(MagnifySamplerFilter::Nearest)
-                        .minify_filter(MinifySamplerFilter::Nearest)
+                        .minify_filter(MinifySamplerFilter::Nearest),
+                    texture_map_chances: self.texture_map_chances.sampled()
+                        .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
+                        .magnify_filter(MagnifySamplerFilter::Nearest)
+                        .minify_filter(MinifySamplerFilter::Nearest),
                 },
                 &params,
             )

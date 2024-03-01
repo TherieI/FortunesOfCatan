@@ -14,8 +14,8 @@ pub struct HexVertex {
     /// Resource | ID
     /// None     | 0
     /// Desert   | 1
-    /// Brick    | 2
-    /// Wood     | 3
+    /// Wood     | 2
+    /// Brick    | 3
     /// Ore      | 4
     /// Wheat    | 5
     /// Sheep    | 6
@@ -33,8 +33,8 @@ impl HexVertex {
 
     pub fn add_meta(&mut self, resource: Option<Resource>) {
         self.hex_meta = match resource {
-            Some(Resource::Brick(n)) => 0u32 | 2 | (n as u32) << 8,
-            Some(Resource::Wood(n)) => 0u32 | 3 | (n as u32) << 8,
+            Some(Resource::Wood(n)) => 0u32 | 2 | (n as u32) << 8,
+            Some(Resource::Brick(n)) => 0u32 | 3 | (n as u32) << 8,
             Some(Resource::Ore(n)) => 0u32 | 4 | (n as u32) << 8,
             Some(Resource::Wheat(n)) => 0u32 | 5 | (n as u32) << 8,
             Some(Resource::Sheep(n)) => 0u32 | 6 | (n as u32) << 8,

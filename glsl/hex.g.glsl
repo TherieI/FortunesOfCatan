@@ -37,7 +37,7 @@ void main() {
         vec2 pos = vec2(hex_radius * cos(theta), hex_radius * sin(theta));
         // Generate vertex for hexagon point
         gl_Position = u_mvp * (center + vec4(pos, 0.0, 0.0));
-        f_tex_coords = vec2(HEX_FIT * pos.x / 6.0 + 0.5, HEX_FIT * pos.y / 6.0 + 0.5);
+        f_tex_coords = vec2(-HEX_FIT * pos.x / 6.0 + 0.5, HEX_FIT * pos.y / 6.0 + 0.5);
         EmitVertex();
         // Add a vertex for the center so triangle_strip wraps properly
         gl_Position = center_transformed;
