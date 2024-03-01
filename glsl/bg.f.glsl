@@ -1,5 +1,5 @@
 #version 450 core
-
+// https://www.shadertoy.com/view/NlyfWm
 #define PI 3.1415926535897932384626433832795
 #define E  2.7182818284590452353602874713526
 
@@ -52,9 +52,6 @@ bool in_hexagon(vec2 polar_pos, float radius_scale = 1) {
     // Check if the point is within the hexagon equation
     return radius / radius_scale <= HEX_SCALE / cos((1.0 / 3.0) * asin(sin(3.0 * angle)));
 }
-
-int pixellateX = 5;
-int pixellateY = 4;
 
 void main() {
     // Pixellate
