@@ -1,5 +1,7 @@
 use crate::settlers::board::card::{Occupant, Resource};
-use std::fmt::{Display, Formatter};
+use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
+
+use super::building::Structure;
 
 /// Maximum number of hex's on the board
 pub const MAX_HEX: u32 = 64;
@@ -54,10 +56,11 @@ impl Display for HexVertex {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Hex {
     resource: Resource,
     occupants: Option<Occupant>,
+    corners: [Option<Rc<RefCell<Structure>>>; 6],
 }
 
 #[allow(dead_code)]
@@ -66,6 +69,7 @@ impl Hex {
         Hex {
             resource: Resource::Desert(None),
             occupants: None,
+            corners: [None, None, None, None, None, None],
         }
     }
 

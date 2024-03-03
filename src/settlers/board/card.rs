@@ -31,7 +31,7 @@ impl Resource {
             Resource::Sheep(c) => *c,
         }
     }
- }
+}
 
 // Development cards (gambling cards)
 #[allow(dead_code)]

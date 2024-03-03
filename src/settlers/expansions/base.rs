@@ -3,12 +3,12 @@ use crate::settlers::board::hex;
 use crate::settlers::camera::Camera;
 use crate::settlers::game::{DeltaTime, Scene};
 use crate::settlers::matrix::Mat4;
-use crate::settlers::shader::ProgramManager;
+use crate::settlers::shader::{ProgramManager, TextureManager};
 use crate::settlers::Board;
 use glium::backend::Facade;
 use glium::index::NoIndices;
 use glium::uniforms::UniformBuffer;
-use glium::{Frame, IndexBuffer, Surface, Texture2d, VertexBuffer};
+use glium::{Frame, IndexBuffer, Surface, VertexBuffer};
 use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
@@ -56,73 +56,81 @@ impl Mouse {
     }
 }
 
-pub struct BaseGame<'p, 's> {
+pub struct BaseGame<'p> {
     window_dim: PhysicalSize<u32>,
     // Keep track of the program time
     time: Instant,
-    board: Board<'s>,
+    board: Board,
     program_manager: ProgramManager<'p>,
     // Texture for the hex's
-    texture_map_hex: Texture2d,
-    texture_map_chances: Texture2d,
+    texture_manager: TextureManager<'p>,
     camera: Camera,
     delta_time: DeltaTime,
     mouse: Mouse,
     scale: f32,
 }
 
-impl<'p, 's> BaseGame<'p, 's> {
+impl<'p> BaseGame<'p> {
     pub fn new<F>(facade: &F) -> Self
     where
         F: Sized + Facade,
     {
+        // Generate board
         let mut board: Board = Board::from_file("src/settlers/board/maps/chungus.focm").unwrap();
         board.randomize();
+        // Manage textures
+        let mut texture_manager = TextureManager::new();
         // Generate texture for hex tiles
-        let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../../assets/hex/hex_tilemap.png")),
-            image::ImageFormat::Png,
-        )
-        .unwrap()
-        .to_rgba8();
-        let image_dimensions = image.dimensions();
-        let image =
-            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-        let hex_texture = glium::texture::Texture2d::new(facade, image).unwrap();
+        texture_manager
+            .add_texture(facade, "hex_tm", "assets/hex/hex_tilemap.png")
+            .expect("hex texture should be found");
         // Generate texture for chances
-        let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../../../assets/hex/chances_tilemap.png")),
-            image::ImageFormat::Png,
-        )
-        .unwrap()
-        .to_rgba8();
-        let image_dimensions = image.dimensions();
-        let image =
-            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-        let chances_texture = glium::texture::Texture2d::new(facade, image).unwrap();
+        texture_manager
+            .add_texture(
+                facade,
+                "chance_tm",
+                "assets/hex/chances_tilemap.png",
+            )
+            .expect("chances texture should be found");
+        // Generate texture for structures
+        texture_manager
+            .add_texture(
+                facade,
+                "building_tm",
+                "assets/structures/settlement.png",
+            )
+            .expect("structure texture should be found");
         // Create shader program
         use crate::settings::WINDOW_DEFAULT_SIZE;
         let mut program_manager = ProgramManager::new();
         program_manager
             .add_program(
-                "hex",
                 facade,
+                "hex",
                 "glsl/hex/hex.v.glsl",
                 "glsl/hex/hex.f.glsl",
                 Some("glsl/hex/hex.g.glsl"),
             )
             .expect("Hex shaders properly compiling");
         program_manager
-            .add_program("bg", facade, "glsl/bg/bg.v.glsl", "glsl/bg/bg.f.glsl", None)
+            .add_program(facade, "bg", "glsl/bg/bg.v.glsl", "glsl/bg/bg.f.glsl", None)
             .expect("Background shaders properly compiling");
+        program_manager
+            .add_program(
+                facade,
+                "structures",
+                "glsl/structure/str.v.glsl",
+                "glsl/structure/str.f.glsl",
+                Some("glsl/structure/str.g.glsl"),
+            )
+            .expect("Structure shaders properly compiling");
 
         Self {
             window_dim: WINDOW_DEFAULT_SIZE,
             time: Instant::now(),
             board,
             program_manager,
-            texture_map_hex: hex_texture,
-            texture_map_chances: chances_texture,
+            texture_manager,
             camera: Camera::new(8., 0.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
@@ -148,7 +156,7 @@ impl<'p, 's> BaseGame<'p, 's> {
     }
 }
 
-impl<'p, 's> Scene for BaseGame<'p, 's> {
+impl<'p> Scene for BaseGame<'p> {
     // Called on mouse move
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         let last_pos = self.mouse.last_pos();
@@ -205,6 +213,9 @@ impl<'p, 's> Scene for BaseGame<'p, 's> {
     where
         F: ?Sized + Facade,
     {
+        use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter};
+        use glium::BlendingFunction::Addition;
+        use glium::LinearBlendingFactor::{OneMinusSourceAlpha, SourceAlpha};
         let mvp = self.mvp();
         // ============== Background ===============
         let mut total_hex: u32 = 0;
@@ -258,11 +269,8 @@ impl<'p, 's> Scene for BaseGame<'p, 's> {
         let vertices = self.board.hex_buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
-        use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter};
-
-        use glium::BlendingFunction::Addition;
-        use glium::LinearBlendingFactor::{OneMinusSourceAlpha, SourceAlpha};
-
+        
+        // For png transparency
         let params = glium::DrawParameters {
             blend: glium::Blend {
                 color: Addition {
@@ -277,7 +285,6 @@ impl<'p, 's> Scene for BaseGame<'p, 's> {
             },
             ..Default::default()
         };
-
         frame
             .draw(
                 &vertex_buffer,
@@ -289,11 +296,35 @@ impl<'p, 's> Scene for BaseGame<'p, 's> {
                 &uniform! { u_mvp: mvp,
                     u_resolution: (self.window_dim.width, self.window_dim.height),
                     u_time: self.time.elapsed().as_secs_f32(),
-                    texture_map_hex: self.texture_map_hex.sampled()
+                    texture_map_hex: self.texture_manager.texture("hex_tm").unwrap().sampled()
                         .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
                         .magnify_filter(MagnifySamplerFilter::Nearest)
                         .minify_filter(MinifySamplerFilter::Nearest),
-                    texture_map_chances: self.texture_map_chances.sampled()
+                    texture_map_chances: self.texture_manager.texture("chance_tm").unwrap().sampled()
+                        .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
+                        .magnify_filter(MagnifySamplerFilter::Nearest)
+                        .minify_filter(MinifySamplerFilter::Nearest),
+                },
+                &params,
+            )
+            .unwrap();
+
+        // =============== Settlements / Cities / Roads ==================
+        let vertices = self.board.building_buffers();
+        let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
+        let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
+        frame
+            .draw(
+                &vertex_buffer,
+                &index_buffer,
+                &self
+                    .program_manager
+                    .program("structures")
+                    .expect("structure program exists"),
+                &uniform! { u_mvp: mvp,
+                    u_resolution: (self.window_dim.width, self.window_dim.height),
+                    u_time: self.time.elapsed().as_secs_f32(),
+                    texture_map_structures: self.texture_manager.texture("building_tm").unwrap().sampled()
                         .wrap_function(glium::uniforms::SamplerWrapFunction::BorderClamp)
                         .magnify_filter(MagnifySamplerFilter::Nearest)
                         .minify_filter(MinifySamplerFilter::Nearest),
@@ -302,7 +333,5 @@ impl<'p, 's> Scene for BaseGame<'p, 's> {
             )
             .unwrap();
         frame
-
-        // =============== Settlements / Cities / Roads ==================
     }
 }

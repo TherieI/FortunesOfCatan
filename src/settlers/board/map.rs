@@ -1,7 +1,9 @@
 use super::{
-    building::{BuildingVertex, Structure}, card::Resource, hex::{Hex, HexVertex, MAX_HEX}
+    building::{BuildingVertex, Structure},
+    card::Resource,
+    hex::{Hex, HexVertex, MAX_HEX},
 };
-use crate::rand::Rng;
+use crate::{rand::Rng, settlers::matrix::Vec3};
 use rand::seq::SliceRandom;
 use std::fs::read_to_string;
 
@@ -24,16 +26,16 @@ pub enum ParseMapError {
 const BOARD_OFFSET: (f32, f32) = (5., 4.22);
 
 #[derive(Debug)]
-pub struct Board<'s> {
+pub struct Board {
     // All structures, including road, settlement, city...
-    buildings: Vec<Structure<'s>>,
+    buildings: Vec<Structure>,
     tiles: Vec<Vec<Option<Hex>>>,
     // Attributes of Hex tiles, used to randomize the map
     distribution: Vec<Resource>,
     chances: Vec<u8>,
 }
 
-impl<'s> Board<'s> {
+impl Board {
     pub fn from_file(file: &'static str) -> Result<Self, ParseMapError> {
         // Filter the comments and newlines from the file
         let content = read_to_string(file).map_err(|_| ParseMapError::FileNotFound)?;
@@ -247,7 +249,7 @@ impl<'s> Board<'s> {
         let (width, height) = (self.tiles[0].len(), self.tiles.len());
         for j in 0..height {
             for i in 0..width {
-                if let Some(hex) = self.tiles[j][i] {
+                if let Some(hex) = &self.tiles[j][i] {
                     // Push a single point, the center of the hexagon, to the buffer
                     // The gpu will transform this point into a hexagon in the geometry shader
                     let offset = if j % 2 == 0 { BOARD_OFFSET.0 / 2. } else { 0. };
@@ -269,11 +271,13 @@ impl<'s> Board<'s> {
         let mut vertices: Vec<BuildingVertex> = Vec::new();
         for structure in self.buildings.iter() {
             match structure {
-                Structure::Road { position } => vertices.push(BuildingVertex::new(position.x(), position.y())),
+                Structure::Road { position } => {
+                    vertices.push(BuildingVertex::new(position.x(), position.y()))
+                }
                 Structure::Settlement { position, .. } => {
                     let settle = BuildingVertex::new(position.x(), position.y());
                     vertices.push(settle);
-                },
+                }
                 Structure::City { position, .. } => {
                     let city = BuildingVertex::new(position.x(), position.y());
                     vertices.push(city);

@@ -1,5 +1,6 @@
-use crate::settlers::matrix::Vec3;
 use super::{card::Resource, hex::Hex};
+use crate::settlers::matrix::Vec3;
+use std::{borrow::Borrow, rc::Rc, sync::Arc};
 
 // House
 // Has pointers to all surrounding tiles
@@ -12,9 +13,9 @@ pub const SETTLEMENT_PATH: &'static str = "../../../assets/structures/settlement
 pub struct BuildingVertex {
     pos: [f32; 2],
     /// First 4 bits: Type of structure
-    /// 0 - ROAD, 
-    /// 1 - SETTLEMENT, 
-    /// 2 - CITY, 
+    /// 0 - ROAD,
+    /// 1 - SETTLEMENT,
+    /// 2 - CITY,
     /// Next 8 bits: Color ID (Player)
     /// ...
     /// Next 4 bits: Road info
@@ -23,10 +24,10 @@ pub struct BuildingVertex {
 implement_vertex!(BuildingVertex, pos, meta);
 
 impl BuildingVertex {
-    pub fn new(x: f32, y: f32) -> BuildingVertex{
+    pub fn new(x: f32, y: f32) -> BuildingVertex {
         BuildingVertex {
             pos: [x, y],
-            meta: 0
+            meta: 0,
         }
     }
 
@@ -50,32 +51,32 @@ impl BuildingVertex {
 
 /// Represents a catan structure.
 /// Stores the position of the structure relative to the position of the tiles in Map::tiles.
-#[derive(Debug)]
-pub enum Structure<'h> {
+#[derive(Debug, Clone)]
+pub enum Structure {
     Road {
         position: Vec3,
     },
     Settlement {
         position: Vec3,
-        hexes: [Option<&'h Hex>; 3],
+        hexes: [Option<Rc<Hex>>; 3],
     },
     City {
         position: Vec3,
-        hexes: [Option<&'h Hex>; 3],
+        hexes: [Option<Rc<Hex>>; 3],
     },
 }
 
-impl<'h> Structure<'h> {
+impl Structure {
     /// Return resource for the player based on structure
     pub fn collect_resources(&self, roll: u8) -> Vec<Resource> {
-        // Collect resources will only ever return a vec of length 0 - 3, 
+        // Collect resources will only ever return a vec of length 0 - 3,
         let mut resources = Vec::with_capacity(3);
         match self {
             Self::Road { .. } => (),
             Self::Settlement { hexes, .. } => {
                 for hex_option in hexes.iter() {
                     // Iter through all surrounding hexes
-                    if let Some(hex) = hex_option {
+                    if let Some(hex) = hex_option.borrow() {
                         // Ensure the hex is a land tile
                         if !hex.is_robbed() && hex.resource().chance() == roll {
                             // And that it is not robbed and was rolled
@@ -84,15 +85,15 @@ impl<'h> Structure<'h> {
                         }
                     }
                 }
-            },
+            }
             Self::City { hexes, .. } => {
                 for hex_option in hexes.iter() {
                     // Iter through all surrounding hexes
-                    if let Some(hex) = hex_option {
+                    if let Some(hex) = hex_option.borrow() {
                         // Ensure the hex is a land tile
                         if !hex.is_robbed() && hex.resource().chance() == roll {
                             // And that it is not robbed and was rolled
-                            // You get one card for cities
+                            // You get two card for cities
                             resources.push(hex.resource().clone_with_value(2));
                         }
                     }
@@ -115,14 +116,20 @@ mod tests {
     #[test]
     fn vertex_structure() {
         let mut v = BuildingVertex::new(0., 0.);
-        v.set_structure(&Structure::City { position: Vec3::new(0., 0., 0.), hexes: [None; 3] });
+        v.set_structure(&Structure::City {
+            position: Vec3::new(0., 0., 0.),
+            hexes: [None, None, None],
+        });
         assert_eq!(v.meta, 2);
     }
     #[test]
     fn vertex_all_meta() {
         let mut v = BuildingVertex::new(0., 0.);
         v.set_color(5);
-        v.set_structure(&Structure::City { position: Vec3::new(0., 0., 0.), hexes: [None; 3] });
+        v.set_structure(&Structure::City {
+            position: Vec3::new(0., 0., 0.),
+            hexes: [None, None, None],
+        });
         assert_eq!(82, v.meta);
     }
 }
