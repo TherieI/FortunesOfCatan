@@ -1,5 +1,5 @@
 use super::{card::Resource, hex::Hex};
-use crate::settlers::matrix::Vec3;
+use crate::settlers::{interface::clickable::{BoundingBox, Clickable, AABB}, matrix::Vec3};
 use std::{borrow::Borrow, rc::Rc, sync::Arc};
 
 // House
@@ -67,6 +67,13 @@ pub enum Structure {
 }
 
 impl Structure {
+    pub fn hexes(&self) -> &[Option<Rc<Hex>>; 3] {
+        match self {
+            Self::Road { .. } => &[None, None, None],
+            Self::Settlement { hexes, .. } => hexes,
+            Self::City { hexes, .. } => hexes
+        }
+    }
     /// Return resource for the player based on structure
     pub fn collect_resources(&self, roll: u8) -> Vec<Resource> {
         // Collect resources will only ever return a vec of length 0 - 3,
@@ -101,6 +108,18 @@ impl Structure {
             }
         }
         resources
+    }
+}
+
+impl Clickable for Structure {
+    type ClickOutput = ();
+
+    fn bounding(&self) -> Box<dyn BoundingBox> {
+        Box::new(AABB::at(0., 0., 0., 0.))
+    }
+
+    fn output(&self) -> Self::ClickOutput {
+
     }
 }
 

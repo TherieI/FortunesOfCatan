@@ -1,5 +1,9 @@
 use crate::settlers::board::card::{Occupant, Resource};
-use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{Display, Formatter},
+    rc::Rc,
+};
 
 use super::building::Structure;
 
@@ -54,6 +58,7 @@ impl Display for HexVertex {
         write!(f, "({}, {})", self.pos[0], self.pos[1])
     }
 }
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

@@ -1,3 +1,4 @@
+use super::expansion::Expansion;
 use crate::settlers::board::background::quad;
 use crate::settlers::board::hex;
 use crate::settlers::camera::Camera;
@@ -5,7 +6,6 @@ use crate::settlers::game::DeltaTime;
 use crate::settlers::matrix::Mat4;
 use crate::settlers::shader::{ProgramManager, TextureManager};
 use crate::settlers::Board;
-use super::expansion::Expansion;
 use glium::backend::Facade;
 use glium::index::NoIndices;
 use glium::uniforms::UniformBuffer;
@@ -13,7 +13,6 @@ use glium::{Frame, IndexBuffer, Surface, VertexBuffer};
 use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
-
 
 const MOUSE_SPEED: f32 = 10.;
 
@@ -88,19 +87,11 @@ impl<'p> BaseGame<'p> {
             .expect("hex texture should be found");
         // Generate texture for chances
         texture_manager
-            .add_texture(
-                facade,
-                "chance_tm",
-                "assets/hex/chances_tilemap.png",
-            )
+            .add_texture(facade, "chance_tm", "assets/hex/chances_tilemap.png")
             .expect("chances texture should be found");
         // Generate texture for structures
         texture_manager
-            .add_texture(
-                facade,
-                "building_tm",
-                "assets/structures/settlement.png",
-            )
+            .add_texture(facade, "building_tm", "assets/structures/settlement.png")
             .expect("structure texture should be found");
         // Create shader program
         use crate::settings::WINDOW_DEFAULT_SIZE;
@@ -271,7 +262,7 @@ impl<'p> Expansion for BaseGame<'p> {
         let vertices = self.board.hex_buffers();
         let vertex_buffer = VertexBuffer::new(facade, &vertices).unwrap();
         let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
-        
+
         // For png transparency
         let params = glium::DrawParameters {
             blend: glium::Blend {
