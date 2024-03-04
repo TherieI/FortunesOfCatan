@@ -198,16 +198,17 @@ impl Board {
         })
     }
 
-    fn in_bounds(&self, x: usize, y: usize) -> bool {
-        x < 0 || x > self.tiles[0].len() || y < 0 || y > self.tiles.len()
+    fn in_bounds(&self, x: i32, y: i32) -> bool {
+        x < 0 || x > self.tiles[0].len().try_into().unwrap() || y < 0 || y > self.tiles.len().try_into().unwrap()
     }
 
     fn neighbors_of(&self, i: usize, j: usize) -> Vec<(usize, usize)> {
         let mut neighbors = Vec::new();
-        for di in 0..3 {
-            for dj in 0..3 {
-                if self.in_bounds(i + di, j + dj) {
-
+        for di in -1..=1 {
+            for dj in -1..=1 {
+                let pos = (i as i32 + di, j as i32 + dj);
+                if self.in_bounds(pos.0, pos.1) && self.tiles[j][i].is_some() {
+                    neighbors.push((pos.0 as usize, pos.1 as usize));
                 }
             }
         }

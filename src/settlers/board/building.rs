@@ -83,7 +83,7 @@ impl Structure {
             Self::Settlement { hexes, .. } => {
                 for hex_option in hexes.iter() {
                     // Iter through all surrounding hexes
-                    if let Some(hex) = hex_option.borrow() {
+                    if let Some(hex) = hex_option {
                         // Ensure the hex is a land tile
                         if !hex.is_robbed() && hex.resource().chance() == roll {
                             // And that it is not robbed and was rolled
@@ -96,7 +96,7 @@ impl Structure {
             Self::City { hexes, .. } => {
                 for hex_option in hexes.iter() {
                     // Iter through all surrounding hexes
-                    if let Some(hex) = hex_option.borrow() {
+                    if let Some(hex) = hex_option {
                         // Ensure the hex is a land tile
                         if !hex.is_robbed() && hex.resource().chance() == roll {
                             // And that it is not robbed and was rolled
