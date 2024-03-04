@@ -85,8 +85,8 @@ impl Hex {
         }
     }
 
-    pub fn set_corner(&mut self, corner_id: usize, building: Option<Rc<RefCell<Structure>>>) {
-        self.corners[corner_id] = building;
+    pub fn set_corner(&mut self, corner_id: usize, building: Rc<RefCell<Structure>>) {
+        self.corners[corner_id] = Some(building);
     }
 
     pub fn resource(&self) -> Resource {

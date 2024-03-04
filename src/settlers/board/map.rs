@@ -180,12 +180,38 @@ impl Board {
         if actual_tiles != total_tiles {
             Err(ParseMapError::MapSizeIncompatability)?
         }
+        // Generate all Structure positions on the map
+        for j in 1..(map_dim[0] + 1) {
+            for i in 1..(map_dim[1] + 1) {
+                if let Some(hex) = &mut map[j][i] {
+                    for c in 0..6 {
+                        //hex.set_corner(c, building)
+                    }
+                }
+            }
+        }
         Ok(Self {
             buildings: Vec::new(),
             tiles: map,
             distribution: resources,
             chances,
         })
+    }
+
+    fn in_bounds(&self, x: usize, y: usize) -> bool {
+        x < 0 || x > self.tiles[0].len() || y < 0 || y > self.tiles.len()
+    }
+
+    fn neighbors_of(&self, i: usize, j: usize) -> Vec<(usize, usize)> {
+        let mut neighbors = Vec::new();
+        for di in 0..3 {
+            for dj in 0..3 {
+                if self.in_bounds(i + di, j + dj) {
+
+                }
+            }
+        }
+        neighbors
     }
 
     pub fn randomize(&mut self) {
