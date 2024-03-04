@@ -60,6 +60,13 @@ impl Display for HexVertex {
 pub struct Hex {
     resource: Resource,
     occupants: Option<Occupant>,
+    /// Corner layout:
+    /// 0 - Top Right
+    /// 1 - Top Center
+    /// 2 - Top Left
+    /// 3 - Bottom Left
+    /// 4 - Bottom Center
+    /// 5 - Bottom Right
     corners: [Option<Rc<RefCell<Structure>>>; 6],
 }
 
@@ -71,6 +78,10 @@ impl Hex {
             occupants: None,
             corners: [None, None, None, None, None, None],
         }
+    }
+
+    pub fn set_corner(&mut self, corner_id: usize, building: Option<Rc<RefCell<Structure>>>) {
+        self.corners[corner_id] = building;
     }
 
     pub fn resource(&self) -> Resource {

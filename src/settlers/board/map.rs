@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{rand::Rng, settlers::matrix::Vec3};
 use rand::seq::SliceRandom;
-use std::fs::read_to_string;
+use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
 #[derive(Debug)]
 pub enum ParseMapError {
@@ -28,7 +28,7 @@ const BOARD_OFFSET: (f32, f32) = (5., 4.22);
 #[derive(Debug)]
 pub struct Board {
     // All structures, including road, settlement, city...
-    buildings: Vec<Structure>,
+    buildings: Vec<Rc<RefCell<Structure>>>,
     tiles: Vec<Vec<Option<Hex>>>,
     // Attributes of Hex tiles, used to randomize the map
     distribution: Vec<Resource>,
@@ -270,7 +270,7 @@ impl Board {
     pub fn building_buffers(&self) -> Vec<BuildingVertex> {
         let mut vertices: Vec<BuildingVertex> = Vec::new();
         for structure in self.buildings.iter() {
-            match structure {
+            match *structure.borrow() {
                 Structure::Road { position } => {
                     vertices.push(BuildingVertex::new(position.x(), position.y()))
                 }
