@@ -1,10 +1,11 @@
 use crate::settlers::board::background::quad;
 use crate::settlers::board::hex;
 use crate::settlers::camera::Camera;
-use crate::settlers::game::{DeltaTime, Scene};
+use crate::settlers::game::DeltaTime;
 use crate::settlers::matrix::Mat4;
 use crate::settlers::shader::{ProgramManager, TextureManager};
 use crate::settlers::Board;
+use super::expansion::Expansion;
 use glium::backend::Facade;
 use glium::index::NoIndices;
 use glium::uniforms::UniformBuffer;
@@ -12,6 +13,7 @@ use glium::{Frame, IndexBuffer, Surface, VertexBuffer};
 use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
+
 
 const MOUSE_SPEED: f32 = 10.;
 
@@ -156,7 +158,7 @@ impl<'p> BaseGame<'p> {
     }
 }
 
-impl<'p> Scene for BaseGame<'p> {
+impl<'p> Expansion for BaseGame<'p> {
     // Called on mouse move
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         let last_pos = self.mouse.last_pos();
