@@ -84,6 +84,10 @@ impl Hex {
         }
     }
 
+    pub fn get_corner(&self, corner_id: usize) -> Option<Rc<RefCell<Structure>>> {
+        self.corners[corner_id].clone()
+    }
+
     pub fn set_corner(&mut self, corner_id: usize, building: Rc<RefCell<Structure>>) {
         self.corners[corner_id] = Some(building);
     }

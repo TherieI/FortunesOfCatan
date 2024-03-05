@@ -166,6 +166,7 @@ impl Board {
             let row = lines
                 .get(map_pos + 2 + i - 1)
                 .ok_or(ParseMapError::MapSizeIncompatability)?;
+            // Iterate through all the characters of each row of the map
             for (j, c) in row.chars().enumerate() {
                 match c {
                     '0' => map[i][j + 1] = None,
@@ -251,10 +252,14 @@ impl Board {
         // Generate all Structure positions on the map
         for j in 1..(self.tiles.len() - 1) {
             for i in 1..(self.tiles[0].len() - 1) {
+                let neighbors = self.neighbors_of(i, j);
                 if let Some(hex) = &mut self.tiles[j][i] {
-                    let neighbors = self.neighbors_of(i, j);
                     let structure = Rc::new(RefCell::new(Structure::new(Building::Empty, (0., 0.))));
                     for c in 0..6 {
+                        if hex.get_corner(c).is_none() {
+                            // Set all respective hex's corners
+                            
+                        }
 
                         //hex.set_corner(c, building)
                     }
