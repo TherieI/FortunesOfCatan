@@ -59,7 +59,6 @@ impl Display for HexVertex {
     }
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Hex {

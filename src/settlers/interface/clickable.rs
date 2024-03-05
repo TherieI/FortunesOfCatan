@@ -26,7 +26,7 @@ impl AABB {
     pub fn at(x: f64, y: f64, length: f64, width: f64) -> Self {
         AABB {
             pos: (x, y),
-            dim: (length, width)
+            dim: (length, width),
         }
     }
 }

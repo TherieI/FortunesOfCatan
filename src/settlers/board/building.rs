@@ -1,5 +1,8 @@
 use super::{card::Resource, hex::Hex};
-use crate::settlers::{interface::clickable::{BoundingBox, Clickable, AABB}, matrix::Vec3};
+use crate::settlers::{
+    interface::clickable::{BoundingBox, Clickable, AABB},
+    matrix::Vec3,
+};
 use std::{borrow::Borrow, rc::Rc, sync::Arc};
 
 // House
@@ -13,9 +16,10 @@ pub const SETTLEMENT_PATH: &'static str = "../../../assets/structures/settlement
 pub struct BuildingVertex {
     pos: [f32; 2],
     /// First 4 bits: Type of structure
-    /// 0 - ROAD,
-    /// 1 - SETTLEMENT,
-    /// 2 - CITY,
+    /// 0 - EMPTY
+    /// 1 - ROAD,
+    /// 2 - SETTLEMENT,
+    /// 3 - CITY,
     /// Next 8 bits: Color ID (Player)
     /// ...
     /// Next 4 bits: Road info
@@ -32,10 +36,11 @@ impl BuildingVertex {
     }
 
     pub fn set_structure(&mut self, structure: &Structure) {
-        let id = match structure {
-            Structure::Road { .. } => 0u16,
-            Structure::Settlement { .. } => 1,
-            Structure::City { .. } => 2,
+        let id = match structure.building {
+            Building::Empty => 0u16,
+            Building::Road => 1u16,
+            Building::Settlement => 2,
+            Building::City => 3,
         };
         // Clear first 4 bits then add id
         self.meta = (self.meta & 0b1111111111110000) | id;
@@ -49,39 +54,65 @@ impl BuildingVertex {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Building {
+    Empty,
+    Road,
+    Settlement,
+    City,
+}
+
 /// Represents a catan structure.
 /// Stores the position of the structure relative to the position of the tiles in Map::tiles.
 #[derive(Debug, Clone)]
-pub enum Structure {
-    Road {
-        position: Vec3,
-    },
-    Settlement {
-        position: Vec3,
-        hexes: [Option<Rc<Hex>>; 3],
-    },
-    City {
-        position: Vec3,
-        hexes: [Option<Rc<Hex>>; 3],
-    },
+pub struct Structure {
+    building: Building,
+    position: (f32, f32),
+    hexes: [Option<Rc<Hex>>; 3],
 }
 
 impl Structure {
+    pub fn new(building: Building, position: (f32, f32)) -> Self {
+        Self {
+            building,
+            position,
+            hexes: [None, None, None]
+        }
+    }
+
+    pub fn add_hex(&mut self, hex: Rc<Hex>) {
+        for i in 0..self.hexes.len() {
+            if self.hexes[i].is_none() {
+                self.hexes[i] = Some(hex);
+                break;
+            }
+        }
+    }
+
+    pub fn building(&self) -> Building {
+        self.building
+    }
+
+    pub fn position(&self) -> (f32, f32) {
+        self.position
+    }
+
     pub fn hexes(&self) -> &[Option<Rc<Hex>>; 3] {
-        match self {
-            Self::Road { .. } => &[None, None, None],
-            Self::Settlement { hexes, .. } => hexes,
-            Self::City { hexes, .. } => hexes
+        match self.building {
+            Building::Road => &[None, None, None],
+            Building::Settlement => &self.hexes,
+            Building::City => &self.hexes,
+            _ => &[None, None, None]
         }
     }
     /// Return resource for the player based on structure
     pub fn collect_resources(&self, roll: u8) -> Vec<Resource> {
         // Collect resources will only ever return a vec of length 0 - 3,
         let mut resources = Vec::with_capacity(3);
-        match self {
-            Self::Road { .. } => (),
-            Self::Settlement { hexes, .. } => {
-                for hex_option in hexes.iter() {
+        match self.building {
+            Building::Road => (),
+            Building::Settlement => {
+                for hex_option in self.hexes.iter() {
                     // Iter through all surrounding hexes
                     if let Some(hex) = hex_option {
                         // Ensure the hex is a land tile
@@ -93,8 +124,8 @@ impl Structure {
                     }
                 }
             }
-            Self::City { hexes, .. } => {
-                for hex_option in hexes.iter() {
+            Building::City => {
+                for hex_option in self.hexes.iter() {
                     // Iter through all surrounding hexes
                     if let Some(hex) = hex_option {
                         // Ensure the hex is a land tile
@@ -106,7 +137,8 @@ impl Structure {
                     }
                 }
             }
-        }
+            _ => ()
+        };
         resources
     }
 }
@@ -118,9 +150,7 @@ impl Clickable for Structure {
         Box::new(AABB::at(0., 0., 0., 0.))
     }
 
-    fn output(&self) -> Self::ClickOutput {
-
-    }
+    fn output(&self) -> Self::ClickOutput {}
 }
 
 #[cfg(test)]
@@ -135,20 +165,14 @@ mod tests {
     #[test]
     fn vertex_structure() {
         let mut v = BuildingVertex::new(0., 0.);
-        v.set_structure(&Structure::City {
-            position: Vec3::new(0., 0., 0.),
-            hexes: [None, None, None],
-        });
+        v.set_structure(&Structure::new(Building::City, (0., 0.)));
         assert_eq!(v.meta, 2);
     }
     #[test]
     fn vertex_all_meta() {
         let mut v = BuildingVertex::new(0., 0.);
         v.set_color(5);
-        v.set_structure(&Structure::City {
-            position: Vec3::new(0., 0., 0.),
-            hexes: [None, None, None],
-        });
+        v.set_structure(&Structure::new(Building::City, (0., 0.)));
         assert_eq!(82, v.meta);
     }
 }

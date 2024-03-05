@@ -1,5 +1,5 @@
 use super::{
-    building::{BuildingVertex, Structure},
+    building::{Building, BuildingVertex, Structure},
     card::Resource,
     hex::{Hex, HexVertex, MAX_HEX},
 };
@@ -161,8 +161,8 @@ impl Board {
         }
         // We add 1 to create a border around the map
         let mut actual_tiles = 0;
-        let mut map: Vec<Vec<Option<Hex>>> = vec![vec![None; map_dim[1] + 2]; map_dim[0] + 2];
-        for i in 1..(map_dim[0] + 1) {
+        let mut map: Vec<Vec<Option<Hex>>> = vec![vec![None; map_dim[0] + 2]; map_dim[1] + 2];
+        for i in 1..(map_dim[1] + 1) {
             let row = lines
                 .get(map_pos + 2 + i - 1)
                 .ok_or(ParseMapError::MapSizeIncompatability)?;
@@ -180,39 +180,87 @@ impl Board {
         if actual_tiles != total_tiles {
             Err(ParseMapError::MapSizeIncompatability)?
         }
+        let mut map = Self {
+            buildings: Vec::new(),
+            tiles: map,
+            distribution: resources,
+            chances,
+        };
         // Generate all Structure positions on the map
-        for j in 1..(map_dim[0] + 1) {
-            for i in 1..(map_dim[1] + 1) {
-                if let Some(hex) = &mut map[j][i] {
+        map.gen_structure_positions();
+        Ok(map)
+    }
+
+    /// Returns true if the tile is in bounds and is land, otherwise false
+    fn in_bounds(&self, x: i32, y: i32) -> bool {
+        !(x < 0
+            || x > self.tiles[0].len().try_into().unwrap()
+            || y < 0
+            || y > self.tiles.len().try_into().unwrap())
+            && self.tiles[y as usize][x as usize].is_some()
+    }
+
+    fn neighbors_of(&self, i: usize, j: usize) -> Vec<(usize, usize)> {
+        let mut neighbors = Vec::new();
+        [(i as i32 - 1, j as i32), (i as i32 + 1, j as i32)]
+            .into_iter()
+            .for_each(|(di, dj)| {
+                if self.in_bounds(di, dj) {
+                    neighbors.push(
+                        (dj as usize, di as usize),
+                    );
+                }
+            });
+        if j % 2 == 0 {
+            // Even row
+            [
+                (i as i32, j as i32 + 1),
+                (i as i32 + 1, j as i32 + 1),
+                (i as i32, j as i32 - 1),
+                (i as i32 + 1, j as i32 - 1),
+            ]
+            .into_iter()
+            .for_each(|(di, dj)| {
+                if self.in_bounds(di, dj) {
+                    neighbors.push(
+                        (dj as usize, di as usize),
+                    );
+                }
+            });
+        } else {
+            // Odd row
+            [
+                (i as i32 - 1, j as i32 + 1),
+                (i as i32, j as i32 + 1),
+                (i as i32 - 1, j as i32 - 1),
+                (i as i32, j as i32 - 1),
+            ]
+            .into_iter()
+            .for_each(|(di, dj)| {
+                if self.in_bounds(di, dj) {
+                    neighbors.push(
+                        (dj as usize, di as usize),
+                    );
+                }
+            });
+        }
+        neighbors
+    }
+
+    fn gen_structure_positions(&mut self) {
+        // Generate all Structure positions on the map
+        for j in 1..(self.tiles.len() - 1) {
+            for i in 1..(self.tiles[0].len() - 1) {
+                if let Some(hex) = &mut self.tiles[j][i] {
+                    let neighbors = self.neighbors_of(i, j);
+                    let structure = Rc::new(RefCell::new(Structure::new(Building::Empty, (0., 0.))));
                     for c in 0..6 {
+
                         //hex.set_corner(c, building)
                     }
                 }
             }
         }
-        Ok(Self {
-            buildings: Vec::new(),
-            tiles: map,
-            distribution: resources,
-            chances,
-        })
-    }
-
-    fn in_bounds(&self, x: i32, y: i32) -> bool {
-        x < 0 || x > self.tiles[0].len().try_into().unwrap() || y < 0 || y > self.tiles.len().try_into().unwrap()
-    }
-
-    fn neighbors_of(&self, i: usize, j: usize) -> Vec<(usize, usize)> {
-        let mut neighbors = Vec::new();
-        for di in -1..=1 {
-            for dj in -1..=1 {
-                let pos = (i as i32 + di, j as i32 + dj);
-                if self.in_bounds(pos.0, pos.1) && self.tiles[j][i].is_some() {
-                    neighbors.push((pos.0 as usize, pos.1 as usize));
-                }
-            }
-        }
-        neighbors
     }
 
     pub fn randomize(&mut self) {
@@ -295,23 +343,12 @@ impl Board {
     }
 
     pub fn building_buffers(&self) -> Vec<BuildingVertex> {
-        let mut vertices: Vec<BuildingVertex> = Vec::new();
-        for structure in self.buildings.iter() {
-            match *structure.borrow() {
-                Structure::Road { position } => {
-                    vertices.push(BuildingVertex::new(position.x(), position.y()))
-                }
-                Structure::Settlement { position, .. } => {
-                    let settle = BuildingVertex::new(position.x(), position.y());
-                    vertices.push(settle);
-                }
-                Structure::City { position, .. } => {
-                    let city = BuildingVertex::new(position.x(), position.y());
-                    vertices.push(city);
-                }
-            }
-        }
-        vertices
+        self.buildings.iter().map(|structure| {
+            let pos = structure.borrow().position();
+            let mut bv = BuildingVertex::new(pos.0, pos.1);
+            bv.set_structure(&structure.borrow());
+            bv
+        }).collect()
     }
 }
 

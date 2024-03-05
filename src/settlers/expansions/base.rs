@@ -77,7 +77,7 @@ impl<'p> BaseGame<'p> {
         F: Sized + Facade,
     {
         // Generate board
-        let mut board: Board = Board::from_file("src/settlers/board/maps/chungus.focm").unwrap();
+        let mut board: Board = Board::from_file("src/settlers/board/maps/custom.focm").unwrap();
         board.randomize();
         // Manage textures
         let mut texture_manager = TextureManager::new();
