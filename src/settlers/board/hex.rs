@@ -59,6 +59,17 @@ impl Display for HexVertex {
     }
 }
 
+/// Enum for neighbors
+#[derive(Debug, Clone)]
+pub enum HexEdge {
+    TopRight(Rc<RefCell<Structure>>),
+    Top(Rc<RefCell<Structure>>),
+    TopLeft(Rc<RefCell<Structure>>),
+    BottomLeft(Rc<RefCell<Structure>>),
+    Bottom(Rc<RefCell<Structure>>),
+    BottomRight(Rc<RefCell<Structure>>),
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Hex {
@@ -71,7 +82,7 @@ pub struct Hex {
     /// 3 - Bottom Left
     /// 4 - Bottom Center
     /// 5 - Bottom Right
-    corners: [Option<Rc<RefCell<Structure>>>; 6],
+    corners: [Option<HexEdge>; 6],
 }
 
 #[allow(dead_code)]
@@ -84,11 +95,11 @@ impl Hex {
         }
     }
 
-    pub fn get_corner(&self, corner_id: usize) -> Option<Rc<RefCell<Structure>>> {
+    pub fn get_corner(&self, corner_id: usize) -> Option<HexEdge> {
         self.corners[corner_id].clone()
     }
 
-    pub fn set_corner(&mut self, corner_id: usize, building: Rc<RefCell<Structure>>) {
+    pub fn set_corner(&mut self, corner_id: usize, building: HexEdge) {
         self.corners[corner_id] = Some(building);
     }
 

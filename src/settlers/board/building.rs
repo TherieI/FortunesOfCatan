@@ -72,6 +72,10 @@ pub struct Structure {
 }
 
 impl Structure {
+    pub fn uninitialized() -> Self {
+        Self::new(Building::Empty, (0., 0.))
+    }
+
     pub fn new(building: Building, position: (f32, f32)) -> Self {
         Self {
             building,
