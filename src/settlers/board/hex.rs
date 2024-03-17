@@ -70,6 +70,7 @@ pub enum HexEdge {
     BottomRight(Rc<RefCell<Structure>>),
 }
 
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Hex {
