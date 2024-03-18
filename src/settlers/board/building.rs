@@ -80,7 +80,7 @@ impl Structure {
         Self {
             building,
             position,
-            hexes: [None, None, None]
+            hexes: [None, None, None],
         }
     }
 
@@ -106,7 +106,7 @@ impl Structure {
             Building::Road => &[None, None, None],
             Building::Settlement => &self.hexes,
             Building::City => &self.hexes,
-            _ => &[None, None, None]
+            _ => &[None, None, None],
         }
     }
     /// Return resource for the player based on structure
@@ -141,7 +141,7 @@ impl Structure {
                     }
                 }
             }
-            _ => ()
+            _ => (),
         };
         resources
     }

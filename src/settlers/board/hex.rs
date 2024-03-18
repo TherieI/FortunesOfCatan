@@ -62,14 +62,13 @@ impl Display for HexVertex {
 /// Enum for neighbors
 #[derive(Debug, Clone)]
 pub enum HexEdge {
-    TopRight(Rc<RefCell<Structure>>),
-    Top(Rc<RefCell<Structure>>),
-    TopLeft(Rc<RefCell<Structure>>),
-    BottomLeft(Rc<RefCell<Structure>>),
-    Bottom(Rc<RefCell<Structure>>),
-    BottomRight(Rc<RefCell<Structure>>),
+    TopRight(Option<Rc<RefCell<Structure>>>),
+    Top(Option<Rc<RefCell<Structure>>>),
+    TopLeft(Option<Rc<RefCell<Structure>>>),
+    BottomLeft(Option<Rc<RefCell<Structure>>>),
+    Bottom(Option<Rc<RefCell<Structure>>>),
+    BottomRight(Option<Rc<RefCell<Structure>>>),
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -77,31 +76,52 @@ pub struct Hex {
     resource: Resource,
     occupants: Option<Occupant>,
     /// Corner layout:
-    /// 0 - Top Right
-    /// 1 - Top Center
-    /// 2 - Top Left
-    /// 3 - Bottom Left
-    /// 4 - Bottom Center
-    /// 5 - Bottom Right
-    corners: [Option<HexEdge>; 6],
+    /// https://www.desmos.com/calculator/hwsecfsgvj
+    /// 0 - Top
+    /// 1 - Top Right
+    /// 2 - Bottom Right
+    /// 3 - Bottom
+    /// 4 - Bottom Left
+    /// 5 - Top Left
+    corners: [HexEdge; 6],
 }
 
 #[allow(dead_code)]
 impl Hex {
     pub fn new() -> Self {
+        use HexEdge::*;
         Hex {
             resource: Resource::Desert(None),
             occupants: None,
-            corners: [None, None, None, None, None, None],
+            corners: [
+                Top(None),
+                TopRight(None),
+                BottomRight(None),
+                Bottom(None),
+                BottomLeft(None),
+                TopLeft(None),
+            ],
         }
     }
 
-    pub fn get_corner(&self, corner_id: usize) -> Option<HexEdge> {
+    pub fn corners(&self) -> &[HexEdge; 6] {
+        &self.corners
+    }
+
+    pub fn get_corner(&self, corner_id: usize) -> HexEdge {
         self.corners[corner_id].clone()
     }
 
-    pub fn set_corner(&mut self, corner_id: usize, building: HexEdge) {
-        self.corners[corner_id] = Some(building);
+    pub fn set_corner(&mut self, building: HexEdge) {
+        let index = match &building {
+            HexEdge::Top(_) => 0,
+            HexEdge::TopRight(_) => 1,
+            HexEdge::BottomRight(_) => 2,
+            HexEdge::Bottom(_) => 3,
+            HexEdge::BottomLeft(_) => 4,
+            HexEdge::TopLeft(_) => 5,
+        };
+        self.corners[index] = building;
     }
 
     pub fn resource(&self) -> Resource {

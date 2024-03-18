@@ -1,7 +1,7 @@
 use super::{
-    building::{Building, BuildingVertex, Structure},
+    building::{self, Building, BuildingVertex, Structure},
     card::Resource,
-    hex::{Hex, HexVertex, MAX_HEX},
+    hex::{Hex, HexEdge, HexVertex, MAX_HEX},
 };
 use crate::{rand::Rng, settlers::matrix::Vec3};
 use rand::seq::SliceRandom;
@@ -193,75 +193,282 @@ impl Board {
     }
 
     /// Returns true if the tile is in bounds and is land, otherwise false
-    fn in_bounds(&self, x: i32, y: i32) -> bool {
-        !(x < 0
-            || x > self.tiles[0].len().try_into().unwrap()
-            || y < 0
-            || y > self.tiles.len().try_into().unwrap())
-            && self.tiles[y as usize][x as usize].is_some()
-    }
-
-    fn neighbors_of(&self, i: usize, j: usize) -> Vec<(usize, usize)> {
-        let mut neighbors = Vec::new();
-        [(i as i32 - 1, j as i32), (i as i32 + 1, j as i32)]
-            .into_iter()
-            .for_each(|(di, dj)| {
-                if self.in_bounds(di, dj) {
-                    neighbors.push(
-                        (dj as usize, di as usize),
-                    );
-                }
-            });
-        if j % 2 == 0 {
-            // Even row
-            [
-                (i as i32, j as i32 + 1),
-                (i as i32 + 1, j as i32 + 1),
-                (i as i32, j as i32 - 1),
-                (i as i32 + 1, j as i32 - 1),
-            ]
-            .into_iter()
-            .for_each(|(di, dj)| {
-                if self.in_bounds(di, dj) {
-                    neighbors.push(
-                        (dj as usize, di as usize),
-                    );
-                }
-            });
+    fn land(&mut self, x: i32, y: i32) -> Option<&mut Hex> {
+        if !(x < 0 || x > self.tiles[0].len() as i32 || y < 0 || y > self.tiles.len() as i32) {
+            self.tiles[y as usize][x as usize].as_mut()
         } else {
-            // Odd row
-            [
-                (i as i32 - 1, j as i32 + 1),
-                (i as i32, j as i32 + 1),
-                (i as i32 - 1, j as i32 - 1),
-                (i as i32, j as i32 - 1),
-            ]
-            .into_iter()
-            .for_each(|(di, dj)| {
-                if self.in_bounds(di, dj) {
-                    neighbors.push(
-                        (dj as usize, di as usize),
-                    );
-                }
-            });
+            None
         }
-        neighbors
     }
 
     fn gen_structure_positions(&mut self) {
         // Generate all Structure positions on the map
         for j in 1..(self.tiles.len() - 1) {
             for i in 1..(self.tiles[0].len() - 1) {
-                let neighbors = self.neighbors_of(i, j);
-                if let Some(hex) = &mut self.tiles[j][i] {
-                    let structure = Rc::new(RefCell::new(Structure::new(Building::Empty, (0., 0.))));
-                    for c in 0..6 {
-                        if hex.get_corner(c).is_none() {
-                            // Set all respective hex's corners
-                            
+                // Would have loved to do something like `if let Some(hex) = &mut self.tiles[j][i]`
+                // But then I would have had multiple mutable references when I set the neighbors
+                if self.tiles[j][i].is_some() {
+                    let corners = self.tiles[j][i].as_mut().unwrap().corners().to_owned();
+                    use std::f32::consts::PI;
+                    let hex_radius = 2.8;
+                    for (corner_id, corner) in corners.iter().enumerate() {
+                        // We can use these calculations to determine the position of the hex's edge relative to the center
+                        // https://www.desmos.com/calculator/hwsecfsgvj
+                        let theta = 2.0 * PI * corner_id as f32 / 6.0 + PI / 2.0;
+                        // Position of hexagon point
+                        let offset = if j % 2 == 0 { BOARD_OFFSET.0 / 2. } else { 0. };
+                        let pos = (i as f32 * BOARD_OFFSET.0 + offset + hex_radius * -theta.cos(), j as f32 * BOARD_OFFSET.1 + hex_radius * theta.sin());
+                        // Instanciate building
+                        let building = Rc::new(RefCell::new(Structure::new(Building::Empty, pos)));
+                        // There could be a better way of doing this, idk
+                        match corner {
+                            HexEdge::Top(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::Top(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32, j as i32 + 1) {
+                                            // Set corner of top left hex
+                                            hex.set_corner(HexEdge::BottomRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32 + 1) {
+                                            // Set corner of top right hex
+                                            hex.set_corner(HexEdge::BottomLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32 + 1) {
+                                            // Set corner of top left hex
+                                            hex.set_corner(HexEdge::BottomRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32, j as i32 + 1) {
+                                            // Set corner of top right hex
+                                            hex.set_corner(HexEdge::BottomLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
+                            HexEdge::TopRight(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::TopRight(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32 + 1) {
+                                            // Set corner of top right hex
+                                            hex.set_corner(HexEdge::Bottom(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32) {
+                                            // Set corner of right hex
+                                            hex.set_corner(HexEdge::TopLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32, j as i32 + 1) {
+                                            // Set corner of top right hex
+                                            hex.set_corner(HexEdge::Bottom(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32) {
+                                            // Set corner of right hex
+                                            hex.set_corner(HexEdge::TopLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
+                            HexEdge::BottomRight(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::BottomRight(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32) {
+                                            // Set corner of right hex
+                                            hex.set_corner(HexEdge::BottomLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32 - 1) {
+                                            // Set corner of bottom right hex
+                                            hex.set_corner(HexEdge::Top(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32) {
+                                            // Set corner of right hex
+                                            hex.set_corner(HexEdge::BottomLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32, j as i32 - 1) {
+                                            // Set corner of bottom right hex
+                                            hex.set_corner(HexEdge::Top(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
+                            HexEdge::Bottom(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::Bottom(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32, j as i32 - 1) {
+                                            // Set corner of bottom left hex
+                                            hex.set_corner(HexEdge::TopRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 + 1, j as i32 - 1) {
+                                            // Set corner of bottom right hex
+                                            hex.set_corner(HexEdge::TopLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32 - 1) {
+                                            // Set corner of bottom left hex
+                                            hex.set_corner(HexEdge::TopRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32, j as i32 - 1) {
+                                            // Set corner of bottom right hex
+                                            hex.set_corner(HexEdge::TopLeft(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
+                            HexEdge::BottomLeft(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::BottomLeft(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32, j as i32 - 1) {
+                                            // Set corner of bottom left hex
+                                            hex.set_corner(HexEdge::Top(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32) {
+                                            // Set corner of left hex
+                                            hex.set_corner(HexEdge::BottomRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32 - 1) {
+                                            // Set corner of bottom left hex
+                                            hex.set_corner(HexEdge::Top(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32) {
+                                            // Set corner of left hex
+                                            hex.set_corner(HexEdge::BottomRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
+                            HexEdge::TopLeft(structure) => {
+                                if structure.is_none() {
+                                    // Add building to buildings array
+                                    self.buildings.push(building.clone());
+                                    self.tiles[j][i]
+                                        .as_mut()
+                                        .unwrap()
+                                        .set_corner(HexEdge::TopLeft(Some(building.clone())));
+                                    // Set edge for corrisponding neighbor(s)
+                                    // Math is different for even / odd hex neighbors
+                                    if j % 2 == 0 {
+                                        // Even
+                                        if let Some(hex) = self.land(i as i32, j as i32 + 1) {
+                                            // Set corner of top left hex
+                                            hex.set_corner(HexEdge::Bottom(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32) {
+                                            // Set corner of left hex
+                                            hex.set_corner(HexEdge::TopRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    } else {
+                                        // Odd
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32 + 1) {
+                                            // Set corner of top left hex
+                                            hex.set_corner(HexEdge::Bottom(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                        if let Some(hex) = self.land(i as i32 - 1, j as i32) {
+                                            // Set corner of left hex
+                                            hex.set_corner(HexEdge::TopRight(Some(
+                                                building.clone(),
+                                            )));
+                                        }
+                                    }
+                                }
+                            }
                         }
-
-                        //hex.set_corner(c, building)
                     }
                 }
             }
@@ -348,12 +555,15 @@ impl Board {
     }
 
     pub fn building_buffers(&self) -> Vec<BuildingVertex> {
-        self.buildings.iter().map(|structure| {
-            let pos = structure.borrow().position();
-            let mut bv = BuildingVertex::new(pos.0, pos.1);
-            bv.set_structure(&structure.borrow());
-            bv
-        }).collect()
+        self.buildings
+            .iter()
+            .map(|structure| {
+                let pos = structure.borrow().position();
+                let mut bv = BuildingVertex::new(pos.0, pos.1);
+                bv.set_structure(&structure.borrow());
+                bv
+            })
+            .collect()
     }
 }
 
@@ -367,5 +577,8 @@ mod tests {
     fn check_output() {
         // println!("{:?}", Map::parse_map("src/settlers/board/maps/default.focm"));
         // assert!(parse_map("src/settlers/board/maps/default.focm").is_ok());
+        let i: i32 = -2;
+        let u: usize = i as usize;
+        println!("{}", u)
     }
 }
