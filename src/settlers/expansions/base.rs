@@ -113,12 +113,11 @@ impl<'p> Expansion for BaseGame<'p> {
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
         self.mouse.update_cursor(position);
     }
-
     // Called on recieving mouse input
     fn mouse_input(&mut self, state: ElementState, button: MouseButton) {
         self.mouse.update_buttons(state, button);
     }
-
+    // Called when mouse scrolled
     fn scroll_input(&mut self, delta: MouseScrollDelta, _phase: TouchPhase) {
         match delta {
             MouseScrollDelta::LineDelta(_, scroll) => self.scale += scroll / 200.,
@@ -149,9 +148,16 @@ impl<'p> Expansion for BaseGame<'p> {
         self.delta_time.update();
         // ============== Game Logic ================
         if self.mouse.clicked(MouseButton::Left) {
-            println!("CLICKDED!");
             let camera_pos = self.camera.position();
-            if let Some(structure) = self.board.structure_clicked(self.mouse.last_pos()) {
+            // Normalize screen position
+            let last = self.mouse.last_pos();
+            let st = (
+                last.x as f32 / self.window_dim.width as f32,
+                last.y as f32 / self.window_dim.height as f32,
+            );
+            let board_dim = self.board.dim();
+            let world_space = (st.0 * board_dim.0 as f32, st.1 * board_dim.1 as f32);
+            if let Some(structure) = self.board.structure_clicked(world_space) {
                 println!("Structure clicked!");
             }
         }
@@ -160,6 +166,7 @@ impl<'p> Expansion for BaseGame<'p> {
             // Camera panning
             self.camera.move_to(|x, y, z| {
                 let delta_mouse = self.mouse.delta_movement();
+                //println!("{}", self.delta_time.delta());
                 (
                     x - delta_mouse.0 as f32 * MOUSE_SPEED / self.window_dim.width as f32,
                     y - delta_mouse.1 as f32 * MOUSE_SPEED / self.window_dim.height as f32,

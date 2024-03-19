@@ -33,7 +33,7 @@ impl AABB {
 
 impl BoundingBox for AABB {
     fn within(&self, mouse_pos: PhysicalPosition<f64>) -> bool {
-        //println!("{:?} | {:?}", mouse_pos, self.pos);
+        println!("{:?} | {:?}", mouse_pos, self.pos);
         self.pos.0 < mouse_pos.x
             && mouse_pos.x < self.pos.0 + self.dim.0
             && self.pos.1 < mouse_pos.y

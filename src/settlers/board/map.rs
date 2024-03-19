@@ -3,8 +3,8 @@ use super::{
     card::Resource,
     hex::{Hex, HexEdge, HexVertex, MAX_HEX},
 };
-use crate::settlers::interface::clickable::Clickable;
 use crate::rand::Rng;
+use crate::settlers::interface::clickable::Clickable;
 use rand::seq::SliceRandom;
 use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
@@ -192,6 +192,10 @@ impl Board {
         // Generate all Structure positions on the map
         map.gen_structure_positions();
         Ok(map)
+    }
+
+    pub fn dim(&self) -> (u32, u32) {
+        (self.tiles[0].len() as u32, self.tiles.len() as u32)
     }
 
     /// Returns true if the tile is in bounds and is land, otherwise false
@@ -522,13 +526,10 @@ impl Board {
         // println!("{:?}", self.tiles);
     }
 
-    pub fn structure_clicked(
-        &self,
-        mouse_pos: winit::dpi::PhysicalPosition<f64>,
-    ) -> Option<Rc<RefCell<Structure>>> {
+    pub fn structure_clicked(&self, world_coords: (f32, f32)) -> Option<Rc<RefCell<Structure>>> {
         // Turn window space coords to world space
         for structure in self.buildings.iter() {
-            if structure.borrow().bounding().within(mouse_pos) {
+            if structure.borrow().bounding().within(world_coords.into()) {
                 return Some(structure.clone());
             }
         }
