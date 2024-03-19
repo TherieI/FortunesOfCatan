@@ -12,5 +12,8 @@ uniform uvec2 u_resolution;  // Screen resolution
 uniform float u_time;       // Time for animation
 
 void main() {
-    color = texture(texture_map_structures, f_tex_coords);
+    if (b_id == 2) {
+        // Settlement
+        color = texture(texture_map_structures, f_tex_coords);
+    }
 }

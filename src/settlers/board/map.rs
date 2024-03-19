@@ -1,9 +1,10 @@
 use super::{
-    building::{self, Building, BuildingVertex, Structure},
+    building::{Building, BuildingVertex, Structure},
     card::Resource,
     hex::{Hex, HexEdge, HexVertex, MAX_HEX},
 };
-use crate::{rand::Rng, settlers::matrix::Vec3};
+use crate::settlers::interface::clickable::Clickable;
+use crate::rand::Rng;
 use rand::seq::SliceRandom;
 use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
@@ -36,6 +37,7 @@ pub struct Board {
 }
 
 impl Board {
+    /// Create a board in memory from a FOCM file
     pub fn from_file(file: &'static str) -> Result<Self, ParseMapError> {
         // Filter the comments and newlines from the file
         let content = read_to_string(file).map_err(|_| ParseMapError::FileNotFound)?;
@@ -201,6 +203,7 @@ impl Board {
         }
     }
 
+    /// Generates the positions of each structure on the board
     fn gen_structure_positions(&mut self) {
         // Generate all Structure positions on the map
         for j in 1..(self.tiles.len() - 1) {
@@ -217,7 +220,10 @@ impl Board {
                         let theta = 2.0 * PI * corner_id as f32 / 6.0 + PI / 2.0;
                         // Position of hexagon point
                         let offset = if j % 2 == 0 { BOARD_OFFSET.0 / 2. } else { 0. };
-                        let pos = (i as f32 * BOARD_OFFSET.0 + offset + hex_radius * -theta.cos(), j as f32 * BOARD_OFFSET.1 + hex_radius * theta.sin());
+                        let pos = (
+                            i as f32 * BOARD_OFFSET.0 + offset + hex_radius * -theta.cos(),
+                            j as f32 * BOARD_OFFSET.1 + hex_radius * theta.sin(),
+                        );
                         // Instanciate building
                         let building = Rc::new(RefCell::new(Structure::new(Building::Empty, pos)));
                         // There could be a better way of doing this, idk
@@ -277,9 +283,7 @@ impl Board {
                                         // Even
                                         if let Some(hex) = self.land(i as i32 + 1, j as i32 + 1) {
                                             // Set corner of top right hex
-                                            hex.set_corner(HexEdge::Bottom(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Bottom(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 + 1, j as i32) {
                                             // Set corner of right hex
@@ -291,9 +295,7 @@ impl Board {
                                         // Odd
                                         if let Some(hex) = self.land(i as i32, j as i32 + 1) {
                                             // Set corner of top right hex
-                                            hex.set_corner(HexEdge::Bottom(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Bottom(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 + 1, j as i32) {
                                             // Set corner of right hex
@@ -324,9 +326,7 @@ impl Board {
                                         }
                                         if let Some(hex) = self.land(i as i32 + 1, j as i32 - 1) {
                                             // Set corner of bottom right hex
-                                            hex.set_corner(HexEdge::Top(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Top(Some(building.clone())));
                                         }
                                     } else {
                                         // Odd
@@ -338,9 +338,7 @@ impl Board {
                                         }
                                         if let Some(hex) = self.land(i as i32, j as i32 - 1) {
                                             // Set corner of bottom right hex
-                                            hex.set_corner(HexEdge::Top(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Top(Some(building.clone())));
                                         }
                                     }
                                 }
@@ -400,9 +398,7 @@ impl Board {
                                         // Even
                                         if let Some(hex) = self.land(i as i32, j as i32 - 1) {
                                             // Set corner of bottom left hex
-                                            hex.set_corner(HexEdge::Top(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Top(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32) {
                                             // Set corner of left hex
@@ -414,9 +410,7 @@ impl Board {
                                         // Odd
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32 - 1) {
                                             // Set corner of bottom left hex
-                                            hex.set_corner(HexEdge::Top(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Top(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32) {
                                             // Set corner of left hex
@@ -441,9 +435,7 @@ impl Board {
                                         // Even
                                         if let Some(hex) = self.land(i as i32, j as i32 + 1) {
                                             // Set corner of top left hex
-                                            hex.set_corner(HexEdge::Bottom(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Bottom(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32) {
                                             // Set corner of left hex
@@ -455,9 +447,7 @@ impl Board {
                                         // Odd
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32 + 1) {
                                             // Set corner of top left hex
-                                            hex.set_corner(HexEdge::Bottom(Some(
-                                                building.clone(),
-                                            )));
+                                            hex.set_corner(HexEdge::Bottom(Some(building.clone())));
                                         }
                                         if let Some(hex) = self.land(i as i32 - 1, j as i32) {
                                             // Set corner of left hex
@@ -528,7 +518,21 @@ impl Board {
                 }
             }
         }
+        // TODO(Gab): Shuffle tiles around so no two are next to eachother
         // println!("{:?}", self.tiles);
+    }
+
+    pub fn structure_clicked(
+        &self,
+        mouse_pos: winit::dpi::PhysicalPosition<f64>,
+    ) -> Option<Rc<RefCell<Structure>>> {
+        // Turn window space coords to world space
+        for structure in self.buildings.iter() {
+            if structure.borrow().bounding().within(mouse_pos) {
+                return Some(structure.clone());
+            }
+        }
+        None
     }
 
     pub fn hex_buffers(&self) -> Vec<HexVertex> {

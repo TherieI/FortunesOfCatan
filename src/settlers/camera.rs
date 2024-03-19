@@ -20,6 +20,11 @@ impl Camera {
         )
     }
 
+    /// Get the position of the camera
+    pub fn position(&self) -> &Vec3 {
+        &self.pos
+    }
+
     /// Move camera to a new position. Closure parameters are the camera's current position.
     pub fn move_to(&mut self, new_pos: impl Fn(f32, f32, f32) -> (f32, f32, f32)) {
         let pos = self.pos.as_tuple();

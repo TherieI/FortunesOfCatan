@@ -3,6 +3,8 @@ use crate::settlers::board::background::quad;
 use crate::settlers::board::hex;
 use crate::settlers::camera::Camera;
 use crate::settlers::game::DeltaTime;
+use crate::settlers::interface::mouse::Mouse;
+use crate::settlers::interface::mouse::MOUSE_SPEED;
 use crate::settlers::matrix::Mat4;
 use crate::settlers::shader::{ProgramManager, TextureManager};
 use crate::settlers::Board;
@@ -13,49 +15,6 @@ use glium::{Frame, IndexBuffer, Surface, VertexBuffer};
 use std::time::Instant;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
-
-const MOUSE_SPEED: f32 = 10.;
-
-pub struct Mouse {
-    left_click_pressed: bool,
-    last_mouse_pos: PhysicalPosition<f64>,
-}
-
-impl Mouse {
-    pub fn new() -> Self {
-        Mouse {
-            left_click_pressed: false,
-            last_mouse_pos: PhysicalPosition::new(0., 0.),
-        }
-    }
-
-    pub fn update_buttons(&mut self, state: ElementState, button: MouseButton) {
-        match state {
-            ElementState::Pressed => {
-                if button == MouseButton::Left {
-                    self.left_click_pressed = true;
-                }
-            }
-            ElementState::Released => {
-                if button == MouseButton::Left {
-                    self.left_click_pressed = false;
-                }
-            }
-        }
-    }
-
-    pub fn update_cursor(&mut self, normal_pos: PhysicalPosition<f64>) {
-        self.last_mouse_pos = normal_pos;
-    }
-
-    pub fn left_pressed(&self) -> bool {
-        self.left_click_pressed
-    }
-
-    pub fn last_pos(&self) -> PhysicalPosition<f64> {
-        self.last_mouse_pos
-    }
-}
 
 pub struct BaseGame<'p> {
     window_dim: PhysicalSize<u32>,
@@ -152,18 +111,6 @@ impl<'p> BaseGame<'p> {
 impl<'p> Expansion for BaseGame<'p> {
     // Called on mouse move
     fn mouse_move(&mut self, position: PhysicalPosition<f64>) {
-        let last_pos = self.mouse.last_pos();
-        if self.mouse.left_pressed() {
-            self.camera.move_to(|x, y, z| {
-                (
-                    x - (last_pos.x - position.x) as f32 * MOUSE_SPEED
-                        / self.window_dim.width as f32,
-                    y - (last_pos.y - position.y) as f32 * MOUSE_SPEED
-                        / self.window_dim.height as f32,
-                    z,
-                )
-            })
-        }
         self.mouse.update_cursor(position);
     }
 
@@ -198,7 +145,30 @@ impl<'p> Expansion for BaseGame<'p> {
 
     // Called every time before draw
     fn update(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Update dt for movement related stuff
         self.delta_time.update();
+        // ============== Game Logic ================
+        if self.mouse.clicked(MouseButton::Left) {
+            println!("CLICKDED!");
+            let camera_pos = self.camera.position();
+            if let Some(structure) = self.board.structure_clicked(self.mouse.last_pos()) {
+                println!("Structure clicked!");
+            }
+        }
+
+        if self.mouse.held(MouseButton::Left) && self.mouse.moved() {
+            // Camera panning
+            self.camera.move_to(|x, y, z| {
+                let delta_mouse = self.mouse.delta_movement();
+                (
+                    x - delta_mouse.0 as f32 * MOUSE_SPEED / self.window_dim.width as f32,
+                    y - delta_mouse.1 as f32 * MOUSE_SPEED / self.window_dim.height as f32,
+                    z,
+                )
+            });
+        }
+        // Call at end of update
+        self.mouse.refresh();
         Ok(())
     }
 

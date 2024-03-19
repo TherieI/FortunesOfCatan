@@ -151,7 +151,12 @@ impl Clickable for Structure {
     type ClickOutput = ();
 
     fn bounding(&self) -> Box<dyn BoundingBox> {
-        Box::new(AABB::at(0., 0., 0., 0.))
+        Box::new(AABB::at(
+            self.position.0 as f64 - 0.5,
+            self.position.1 as f64 - 0.5,
+            1.,
+            1.,
+        ))
     }
 
     fn output(&self) -> Self::ClickOutput {}
