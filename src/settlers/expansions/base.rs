@@ -1,6 +1,7 @@
 use super::expansion::Expansion;
 use crate::settlers::board::background::quad;
 use crate::settlers::board::hex;
+use crate::settlers::board::map::BOARD_OFFSET;
 use crate::settlers::camera::Camera;
 use crate::settlers::game::DeltaTime;
 use crate::settlers::interface::mouse::Mouse;
@@ -76,6 +77,15 @@ impl<'p> BaseGame<'p> {
                 Some("glsl/structure/str.g.glsl"),
             )
             .expect("Structure shaders properly compiling");
+        program_manager
+            .add_program(
+                facade,
+                "bounds",
+                "glsl/bounds/bounds.v.glsl",
+                "glsl/bounds/bounds.f.glsl",
+                Some("glsl/bounds/bounds.g.glsl"),
+            )
+            .expect("Bounds shaders compile");
 
         Self {
             window_dim: WINDOW_DEFAULT_SIZE,
@@ -83,7 +93,8 @@ impl<'p> BaseGame<'p> {
             board,
             program_manager,
             texture_manager,
-            camera: Camera::new(8., 0.),
+            // Center the board (appears on the top left)
+            camera: Camera::new(6., 8.),
             delta_time: DeltaTime::new(),
             mouse: Mouse::new(),
             scale: 0.13,
@@ -98,12 +109,10 @@ impl<'p> BaseGame<'p> {
             -1.0,
         );
         let mut transform = Mat4::identity();
-        transform
-            .translate(-0.4, -0.6, 0.)
-            .scale_uniformly(self.scale);
+        transform.scale_uniformly(self.scale);
         let view = self.camera.view_matrix();
+        // MVP Matrix
         projection.multiply_by(&view).multiply_by(&transform);
-        // println!("{}", projection);
         projection.to_array()
     }
 }
@@ -151,13 +160,11 @@ impl<'p> Expansion for BaseGame<'p> {
             let camera_pos = self.camera.position();
             // Normalize screen position
             let last = self.mouse.last_pos();
-            let st = (
+            let mouse_normalized = (
                 last.x as f32 / self.window_dim.width as f32,
                 last.y as f32 / self.window_dim.height as f32,
             );
-            let board_dim = self.board.dim();
-            let world_space = (st.0 * board_dim.0 as f32, st.1 * board_dim.1 as f32);
-            if let Some(structure) = self.board.structure_clicked(world_space) {
+            if let Some(structure) = self.board.structure_clicked(mouse_normalized, &self.mvp().into()) {
                 println!("Structure clicked!");
             }
         }
@@ -302,6 +309,26 @@ impl<'p> Expansion for BaseGame<'p> {
                 &params,
             )
             .unwrap();
+
+        // // ================ Bounding Boxes ===================
+        // let vertex_buffer = VertexBuffer::new(facade, &self.board.bounding_boxes()).unwrap();
+        // let index_buffer = NoIndices(glium::index::PrimitiveType::Points);
+        // frame
+        //     .draw(
+        //         &vertex_buffer,
+        //         &index_buffer,
+        //         &self
+        //             .program_manager
+        //             .program("bounds")
+        //             .expect("bounds program exists"),
+        //         &uniform! { u_mvp: mvp,
+        //             u_resolution: (self.window_dim.width, self.window_dim.height),
+        //             u_time: self.time.elapsed().as_secs_f32()
+        //         },
+        //         &params,
+        //     )
+        //     .unwrap();
+
         frame
     }
 }

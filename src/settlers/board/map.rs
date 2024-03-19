@@ -3,7 +3,8 @@ use super::{
     card::Resource,
     hex::{Hex, HexEdge, HexVertex, MAX_HEX},
 };
-use crate::rand::Rng;
+use crate::{rand::Rng, settlers::matrix::Mat4};
+use crate::settlers::interface::clickable::BoundingVertex;
 use crate::settlers::interface::clickable::Clickable;
 use rand::seq::SliceRandom;
 use std::{cell::RefCell, fs::read_to_string, rc::Rc};
@@ -24,7 +25,7 @@ pub enum ParseMapError {
     MapSizeIncompatability,
 }
 
-const BOARD_OFFSET: (f32, f32) = (5., 4.22);
+pub const BOARD_OFFSET: (f32, f32) = (5., 4.22);
 
 #[derive(Debug)]
 pub struct Board {
@@ -526,14 +527,22 @@ impl Board {
         // println!("{:?}", self.tiles);
     }
 
-    pub fn structure_clicked(&self, world_coords: (f32, f32)) -> Option<Rc<RefCell<Structure>>> {
+    pub fn structure_clicked(&self, mouse_normalized: (f32, f32), mvp: &Mat4) -> Option<Rc<RefCell<Structure>>> {
         // Turn window space coords to world space
         for structure in self.buildings.iter() {
-            if structure.borrow().bounding().within(world_coords.into()) {
+            if structure.borrow().bounding(Some(mvp)).within(mouse_normalized) {
                 return Some(structure.clone());
             }
         }
         None
+    }
+
+    pub fn bounding_boxes(&self) -> Vec<BoundingVertex> {
+        let mut verts = Vec::new();
+        for structure in self.buildings.iter() {
+            verts.push(structure.borrow().bounding(None).vertex());
+        }
+        verts
     }
 
     pub fn hex_buffers(&self) -> Vec<HexVertex> {

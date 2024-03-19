@@ -1,7 +1,7 @@
 use super::{card::Resource, hex::Hex};
 use crate::settlers::{
     interface::clickable::{BoundingBox, Clickable, AABB},
-    matrix::Vec3,
+    matrix::{Mat4, Vec3},
 };
 use std::{borrow::Borrow, rc::Rc, sync::Arc};
 
@@ -150,13 +150,26 @@ impl Structure {
 impl Clickable for Structure {
     type ClickOutput = ();
 
-    fn bounding(&self) -> Box<dyn BoundingBox> {
-        Box::new(AABB::at(
-            self.position.0 as f64 - 0.5,
-            self.position.1 as f64 - 0.5,
-            1.,
-            1.,
-        ))
+    fn bounding(&self, mvp: Option<&Mat4>) -> Box<dyn BoundingBox> {
+        let size = 2.;
+        let aabb = if let Some(transform) = mvp {
+            println!("{}", transform);
+            // inverse the matrix, then multiply
+            AABB::at(
+                self.position.0 - 0.5 * size,
+                self.position.1 - 0.5 * size,
+                1. * size,
+                1. * size,
+            )
+        } else {
+            AABB::at(
+                self.position.0 - 0.5 * size,
+                self.position.1 - 0.5 * size,
+                1. * size,
+                1. * size,
+            )
+        };
+        Box::new(aabb)
     }
 
     fn output(&self) -> Self::ClickOutput {}
